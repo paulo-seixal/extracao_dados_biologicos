@@ -1,0 +1,125 @@
+---
+title: <center> <h1>Trabalho ECBDB - G3</h1> </center>
+author: <center>José Lemos (pg49838), Paulo Seixal (pg49846), Rúben Fernandes (pg49847)</center>
+date: <center>`r format(Sys.time(), '%d/%m/%y')`</center>
+output:
+  html_document:
+    theme: spacelab #united, spacelab, journal
+    highlight: kate #zenburn, kate, breezedark
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    number_sections: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{css, echo=FALSE}
+.scroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+```
+
+```{=html}
+<style>
+body {text-align: justify}
+div.fontdoc {font-family: georgia;}
+    body .main-container {
+        max-width: 1750px;
+    }
+</style>
+```
+<div class = "fontdoc">
+
+<font size="4">
+
+<a name="topo"></a>
+
+# *Packages*
+
+Instalação dos *packages*.
+
+```{r packages, eval=FALSE, echo=TRUE}
+
+
+```
+
+Importação dos *packages*.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+library(TCGAbiolinks)
+library(tidyverse)
+library(maftools)
+library(pheatmap)
+library(SummarizedExperiment)
+library(GenomicRanges)
+library(readr)
+
+```
+
+# *Datasets*
+
+```{r datasets, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+#project info
+#project_summary = getProjectSummary('TCGA-HNSC')
+
+
+
+#build query
+#query = GDCquery(project = 'TCGA-HNSC',
+#         data.category = 'Transcriptome Profiling',
+#         experimental.strategy = 'RNA-Seq',
+#         workflow.type = 'STAR - Counts',
+#         access = 'open')
+
+#query_results = getResults(query)
+
+
+#download data
+#GDCdownload(query)
+
+
+#prepare data
+#tcga_hnsc = GDCprepare(query, summarizedExperiment = TRUE)
+#data_unstranded = assay(tcga_hnsc, 'unstranded')
+#data_stranded_first = assay(tcga_hnsc, 'stranded_first')
+#data_stranded_second = assay(tcga_hnsc, 'stranded_second')
+#data_tpm_unstrand = assay(tcga_hnsc, 'tpm_unstrand')
+#data_fpkm_unstrand = assay(tcga_hnsc, 'fpkm_unstrand')
+#data_fpkm_uq_unstrand = assay(tcga_hnsc, 'fpkm_uq_unstrand')
+
+#create files
+#write.csv(data_unstranded, 'data_unstranded.csv')
+#write.csv(data_stranded_first, 'data_stranded_first.csv')
+#write.csv(data_stranded_second, 'data_stranded_second.csv')
+#write.csv(data_tpm_unstrand, 'data_tpm_unstrand.csv')
+#write.csv(data_fpkm_unstrand, 'data_fpkm_unstrand.csv')
+#write.csv(data_fpkm_uq_unstrand, 'data_fpkm_uq_unstrand.csv')
+
+#create metadata
+#bio_data = colData(tcga_hnsc)
+#bio_data = as.data.frame(bio_data)
+#write_csv(bio_data, 'bio_data.csv')
+
+```
+
+## Explicação dos dados, sua origem e relevância.
+
+No âmbito da Unidade Curricular Extração de Conhecimento de Bases de Dados Biológicas, inserida no 1º ano de Mestrado de Bioionformática, foi proposta a realização de um trabalho que consta a análise de um conjunto de dados usando o programa R e os packages do Bioconductor.
+
+O objetivo deste trabalho é analisar as informações genéticas presentes no dataset e extrair conhecimentos relevantes, utilizando técnicas de visualização e análise estatística em R, onde se esperam encontrar padrões e correlações que possam ser explorados para um melhor entendimento da patologia em estudo.
+
+Neste caso, será utilizado o dataset TCGA-HNSC, incluido no projeto The Cancer Genome Atlas (TCGA) Research Network. TCGA is a coordinated effort to gather, share, and analyze next generation molecular sequencing data to improve our understanding of cancer mechanisms on a molecular level.
+
+O conjunto de dados TCGA-HNSC contém informações valiosas sobre pacientes com cancro de cabeça e pescoço, que podem ser utilizadas para estudar a expressão de genes e correlacioná-la com informações clínicas relevantes. A inclusão de variáveis clínicas, como informações demográficas dos pacientes, histórico de tabagismo/alcoolismo e características relacionadas à progressão da doença, pode ajudar a identificar fatores de risco e prever resultados clínicos para pacientes com cancro de cabeça e pescoço. A análise de expressão de RNA pode fornecer informações adicionais sobre os processos moleculares subjacentes ao desenvolvimento e progressão deste tipo de patologia.
+
+## Preparação das variáveis
+
+### Dimensão e estrutura {.tabset}
+
+####  {.unnumbered}
