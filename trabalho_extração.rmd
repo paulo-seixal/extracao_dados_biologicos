@@ -1,11 +1,12 @@
 ---
-title: <center> <h1>Trabalho ECBDB - G3</h1> </center>
-author: <center>José Lemos (pg49838), Paulo Seixal (pg49846), Rúben Fernandes (pg49847)</center>
-date: <center>`r format(Sys.time(), '%d/%m/%y')`</center>
+title: Trabalho ECDB - Grupo 4
+author: José Lemos (pg49838), Paulo Seixal (pg49846), Rúben Fernandes (pg49847)
+date: 14/04/2023
+
 output:
   html_document:
-    theme: spacelab #united, spacelab, journal
-    highlight: kate #zenburn, kate, breezedark
+    theme: united #united, spacelab, journal
+    highlight: breezedark #zenburn, kate, breezedark
     toc: true
     toc_float:
       collapsed: true
@@ -62,64 +63,137 @@ library(readr)
 
 ```
 
-# *Datasets*
+# Explicação dos dados, sua origem e relevância {.tabset}
 
-```{r datasets, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+No âmbito da Unidade Curricular Extração de Conhecimento de Dados Biológicos, inserida no 1º ano de Mestrado de Bioionformática, foi proposta a realização de um trabalho que consta a análise de um conjunto de dados usando o programa R e os packages do Bioconductor.
+
+O objetivo deste trabalho é analisar as informações genéticas presentes no dataset e extrair conhecimentos relevantes, utilizando técnicas de visualização e análise estatística em R, onde se esperam encontrar padrões e correlações que possam ser explorados para um melhor entendimento da patologia em estudo.
+
+Neste caso, será utilizado o repositório TCGA-HNSC. Este repositório está incluido no projeto *The Cancer Genome Atlas (TCGA) Research Network*, uma iniciativa que visa recolher, partilhar e analisar dados de *Next Generation Sequencing (NGS),* com o principal foco um maior desenvolvimento da compreensão dos mecanismos do cancro a nível molecular.
+
+O repositório TCGA-HNSC contém informações sobre pacientes com cancro do tipo escamoso da cabeça e pescoço. Estas informações podem ser utilizadas para estudar a expressão de genes e correlacioná-la com informações clínicas relevantes. A inclusão de variáveis clínicas, como informações demográficas dos pacientes, histórico de tabagismo/alcoolismo e características relacionadas à progressão da doença, pode ajudar a identificar fatores de risco e prever resultados clínicos para pacientes com este tipo de cancro.
+
+A importância deste conjunto de dados reside no facto de que a análise de expressão génica poder fornecer *insights* valiosos sobre os processos moleculares subjacentes ao desenvolvimento e progressão do cancro do tipo escamoso da cabeça e pescoço. Combinando essas informações com as características clínicas dos pacientes, é possível identificar fatores de risco, prever resultados clínicos, bem como identificar alvos de desenvolvimento para novas terapias.
+
+Do repositório TCGA-HNSC foram retirados e analisados três datasets: 
+
+## Expressão génica {.unnumbered}
+
+Neste dataset, “data_stranded_second.csv” temos os resultado obtidos através do método stranded para RNA-seq. As nossas colunas serão as amostras enquanto que as linhas serão os genes, está representado  também o “gene expression count” de cada gene em cada amostra. Através do estudo desta dataset será possivél efetuar várias análises como, verificar expressão diferencial, para obtermos maior conhecimento sobre os padrões da expresão  genética e as sua implicações nas funcionalidades dos genes.
+
+## Mutações {.unnumbered}
+
+O dataset “mutation_data.csv” providencia nos com data das mutações genéticas das amostras estudadas no repositório de informação do TCGA-HNSC. Este inclui tópicos como localização do cromossoma, informação sobre os alelos do tumor, classificação de variantes, entre outros dados de genética e genómica. Enquadra-se no objetivo do nosso trabalho pois temos a possibilidade de analizar os efeitos das mutações na expressão genética e o potencial impacto nas funções das proteinas. Permite também estudar a relação das mutações com o tipo de cancro HNSC e entender se tem efeito na regulação da expressão genética.
+
+## Metadados {.unnumbered}
+
+O dataset “biodata.csv” possui informação sobre as pessoas que serviram de amostra para este projeto, desde relatório da patologia, estado do tumor, e histórico de tratamento médico a número de cigarro por dia. A informação deste dataset permite aos investigadores perceber melhor o relacionamento entre as características do paciente e do tumor. Por exemplo informação sobre o tipo e estado do tumor pode ajudar a melhor perceber os diferentes niveis de expressão genética entre tecidos normais ou cancerosos.
+
+# {-}
+
+# *Extração dos dados e preparação de ficheiros* {.tabset}
+
+## Expressão génica {.unnumbered}
+
+```{r datasets, echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 #project info
-#project_summary = getProjectSummary('TCGA-HNSC')
+project_summary = getProjectSummary('TCGA-HNSC')
 
 
 
 #build query
-#query = GDCquery(project = 'TCGA-HNSC',
-#         data.category = 'Transcriptome Profiling',
-#         experimental.strategy = 'RNA-Seq',
-#         workflow.type = 'STAR - Counts',
-#         access = 'open')
+query_gene = GDCquery(project = 'TCGA-HNSC',
+        data.category = 'Transcriptome Profiling',
+        experimental.strategy = 'RNA-Seq',
+        workflow.type = 'STAR - Counts',
+        access = 'open')
 
-#query_results = getResults(query)
+query_results = getResults(query_gene)
 
 
 #download data
-#GDCdownload(query)
+GDCdownload(query_gene)
 
 
 #prepare data
-#tcga_hnsc = GDCprepare(query, summarizedExperiment = TRUE)
-#data_unstranded = assay(tcga_hnsc, 'unstranded')
-#data_stranded_first = assay(tcga_hnsc, 'stranded_first')
-#data_stranded_second = assay(tcga_hnsc, 'stranded_second')
-#data_tpm_unstrand = assay(tcga_hnsc, 'tpm_unstrand')
-#data_fpkm_unstrand = assay(tcga_hnsc, 'fpkm_unstrand')
-#data_fpkm_uq_unstrand = assay(tcga_hnsc, 'fpkm_uq_unstrand')
+tcga_hnsc = GDCprepare(query_gene, summarizedExperiment = TRUE)
+data_unstranded = assay(tcga_hnsc, 'unstranded')
+data_stranded_first = assay(tcga_hnsc, 'stranded_first')
+data_stranded_second = assay(tcga_hnsc, 'stranded_second')
+data_tpm_unstrand = assay(tcga_hnsc, 'tpm_unstrand')
+data_fpkm_unstrand = assay(tcga_hnsc, 'fpkm_unstrand')
+data_fpkm_uq_unstrand = assay(tcga_hnsc, 'fpkm_uq_unstrand')
 
 #create files
-#write.csv(data_unstranded, 'data_unstranded.csv')
-#write.csv(data_stranded_first, 'data_stranded_first.csv')
-#write.csv(data_stranded_second, 'data_stranded_second.csv')
-#write.csv(data_tpm_unstrand, 'data_tpm_unstrand.csv')
-#write.csv(data_fpkm_unstrand, 'data_fpkm_unstrand.csv')
-#write.csv(data_fpkm_uq_unstrand, 'data_fpkm_uq_unstrand.csv')
+write.csv(data_unstranded, 'data_unstranded.csv')
+write.csv(data_stranded_first, 'data_stranded_first.csv')
+write.csv(data_stranded_second, 'data_stranded_second.csv')
+write.csv(data_tpm_unstrand, 'data_tpm_unstrand.csv')
+write.csv(data_fpkm_unstrand, 'data_fpkm_unstrand.csv')
+write.csv(data_fpkm_uq_unstrand, 'data_fpkm_uq_unstrand.csv')
 
-#create metadata
-#bio_data = colData(tcga_hnsc)
-#bio_data = as.data.frame(bio_data)
-#write_csv(bio_data, 'bio_data.csv')
+
 
 ```
 
-## Explicação dos dados, sua origem e relevância.
+## Mutações {.unnumbered}
 
-No âmbito da Unidade Curricular Extração de Conhecimento de Bases de Dados Biológicas, inserida no 1º ano de Mestrado de Bioionformática, foi proposta a realização de um trabalho que consta a análise de um conjunto de dados usando o programa R e os packages do Bioconductor.
+```{r eval=FALSE}
+#build query mutation data
+query_mutation = GDCquery(project = 'TCGA-HNSC',
+                          data.category = 'Simple Nucleotide Variation',
+                          access = 'open')
 
-O objetivo deste trabalho é analisar as informações genéticas presentes no dataset e extrair conhecimentos relevantes, utilizando técnicas de visualização e análise estatística em R, onde se esperam encontrar padrões e correlações que possam ser explorados para um melhor entendimento da patologia em estudo.
+query_mutation_results = getResults(query_mutation)
 
-Neste caso, será utilizado o dataset TCGA-HNSC, incluido no projeto The Cancer Genome Atlas (TCGA) Research Network. TCGA is a coordinated effort to gather, share, and analyze next generation molecular sequencing data to improve our understanding of cancer mechanisms on a molecular level.
 
-O conjunto de dados TCGA-HNSC contém informações valiosas sobre pacientes com cancro de cabeça e pescoço, que podem ser utilizadas para estudar a expressão de genes e correlacioná-la com informações clínicas relevantes. A inclusão de variáveis clínicas, como informações demográficas dos pacientes, histórico de tabagismo/alcoolismo e características relacionadas à progressão da doença, pode ajudar a identificar fatores de risco e prever resultados clínicos para pacientes com cancro de cabeça e pescoço. A análise de expressão de RNA pode fornecer informações adicionais sobre os processos moleculares subjacentes ao desenvolvimento e progressão deste tipo de patologia.
+#download data
+GDCdownload(query_mutation)
 
-## Preparação das variáveis
 
-### Dimensão e estrutura {.tabset}
+#prepare mutation data
+mutation_data = GDCprepare(query_mutation, summarizedExperiment = TRUE)
 
-####  {.unnumbered}
+#create files
+write_csv(mutation_data, 'mutation_data.csv')
+```
+
+## Metadados {.unnumbered}
+
+```{r eval=FALSE}
+
+#create metadata
+bio_data = colData(tcga_hnsc)
+bio_data = as.data.frame(bio_data)
+write_csv(bio_data, 'bio_data.csv')
+```
+
+# {-}
+
+## Importação dos dados
+```{r eval=FALSE}
+#dataset expressão genica
+gene_data = read.csv('data_stranded_second.csv')
+
+
+#dataset muatções
+mutation = read.csv ('mutation_data.csv')
+
+#dataset metadados
+meta = read.csv('bio_data.csv')
+```
+
+De maneira a evitar o download sucessivo dos datasets, decidiu-se por armazenar os dados localmente em ficheiros .csv
+A importação dos ficheiro é demonstrada no segmento de código acima representado.
+
+
+# Pré-processamento
+
+## Filtragem
+Embora não seja necessário pré-filtrar genes de baixa contagem antes de executar as funções DESeq2, existem duas razões que tornam esta filtragem útil: ao remover linhas em que há muito poucas leituras, reduzimos o tamanho da memória do objeto de dados e aumentamos a velocidade das funções dentro do DESeq2. Esta filtragem pode também melhorar visualizações, já que recursos sem informações para expressão diferencial não serão incluidos nos gráficos.
+
+```{r eval=FALSE}
+keep = rowSums(counts(gene_data)) >= 10
+gene_data <- gene_data[keep,]
+```
+
