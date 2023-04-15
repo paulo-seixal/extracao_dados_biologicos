@@ -1,6 +1,14 @@
 library(maftools)
 library(DESeq2)
 library(ggplot2)
+library(summarytools)
+library(scales)
+library(viridis)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(pheatmap)
+
 gene_data = as.matrix(read.csv('data_stranded_second.csv', row.names = 1))
 bio_data = read.csv('bio_data.csv', row.names = 1)
 mutation_data = read.csv('mutation_data.csv')
@@ -64,28 +72,6 @@ ggplot(as.data.frame(age), aes(x = age)) +
 #alcool
 #estadiamento
 
-#Analise expressão diferencial--------------------------------------------------------------
-dds = DESeqDataSetFromMatrix(countData = gene_data,
-                             colData = bio_data,
-                             design = ~ definition)
-
-
-#filter counts under 10
-keep = rowSums(counts(dds)) >= 10
-dds = dds[keep,]
-
-
-#run DESeq
-dds = DESeq(dds)
-res1 = results(dds, name = 'definition_Solid.Tissue.Normal_vs_Metastatic')
-res2 = results(dds, name = 'definition_Primary.solid.Tumor_vs_Metastatic')
-
-dea1 <- as.data.frame(res1)
-dea2 <- as.data.frame(res2)
-
-
-
-
 maftools_input = read.maf(mutation_data)
 
 plotmafSummary(maf = maftools_input,
@@ -95,6 +81,62 @@ plotmafSummary(maf = maftools_input,
 oncoplot(maf = maftools_input,
          top = 10,
          removeNonMutated = TRUE)
+
+#Analise expressão diferencial--------------------------------------------------------------
+dds = DESeqDataSetFromMatrix(countData = gene_data,
+                             colData = bio_data,
+                             design = ~ definition)
+
+
+#filter counts under 20
+keep = rowSums(counts(dds)) >= 20
+dds = dds[keep,]
+
+
+#run DESeq
+dds = DESeq(dds)
+
+#get results
+res = results(dds, alpha = 0.05)
+diff_exp_analysis <- as.data.frame(res)
+
+#explore results
+summary(res)
+sum(res$padj < 0.05, na.rm = TRUE)
+
+#filter results
+dds_filtered = dds[complete.cases(dds),]
+
+
+#plotting results
+
+#MA plots
+plotMA(res)
+
+#histogram´
+hist(res$pvalue[res$baseMean > 1], breaks = 0:20/20,
+     col = "grey50", border = "white")
+
+
+
+#Enrichment analysis--------------------------------------------------------------------------
+
+#sobre-expressos
+genes_up = rownames(res[res$log2FoldChange > 0.5,])
+genes_up = gsub("\\..*","",genes_up)
+
+GO_results = enrichGO(gene = genes_up, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP', pvalueCutoff = 0.05)
+
+fit = plot(barplot(GO_results, showCategory = 10))
+
+
+#sub-expressos
+genes_down = rownames(res)[res$log2FoldChange < -0.5]
+genes_down = gsub("\\..*","",genes_down)
+
+GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP')
+
+fit2 = plot(barplot(GO_results2, showCategory = 10))
 
 
 #falta sumarização dos dados

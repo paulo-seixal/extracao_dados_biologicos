@@ -42,6 +42,8 @@ write.csv(data_tpm_unstrand, 'data_tpm_unstrand.csv')
 write.csv(data_fpkm_unstrand, 'data_fpkm_unstrand.csv')
 write.csv(data_fpkm_uq_unstrand, 'data_fpkm_uq_unstrand.csv')
 
+
+#-------------------------------------------------------------------------------------------
 #create biological data
 bio_data = colData(tcga_hnsc)
 bio_data = as.data.frame(bio_data)
