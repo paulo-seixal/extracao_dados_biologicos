@@ -392,7 +392,7 @@ tt = rowttests(gene_data_fpkm, as.factor(bio_data$definition))
 rank = order(tt$p.value)
 p10000 = rank[1:10000]
 rows = which(tt$p.value %in% tt$p.value[p10000])
-rownames(tt)[rows] #genes com menor p-value, logo com maior probabilidade de serem diferencialmente expressos
+#genes com menor p-value, logo com maior probabilidade de serem diferencialmente expressos
 
 #filtrar dataset de contagens v«elos valores anteriores
 gene_data = gene_data[rownames(gene_data) %in% rownames(tt)[rows],]
@@ -444,12 +444,12 @@ Embora não seja necessário pré-filtrar genes de baixa contagem antes de execu
 
 ## Volcano plot
 
-```{r volcano, out.width= '1700px'}
+```{r volcano, out.width= '1000px'}
 #volcano plot
 res.df = as.data.frame(res)
 rownames(res.df) = gsub("\\..*","",rownames(res.df))
 res.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(res.df), keytype = 'ENSEMBL', column = 'SYMBOL')
-res.df #changed ensembl to symbol genes
+head(res.df) #changed ensembl to symbol genes
 
 EnhancedVolcano(res.df, x= 'log2FoldChange', y = 'padj', lab = res.df$symbol,
                 pCutoff = 1e-4, FCcutoff = 1) #plot
@@ -462,11 +462,11 @@ EnhancedVolcano(res.df, x= 'log2FoldChange', y = 'padj', lab = res.df$symbol,
 sigs.df = as.data.frame(sigs)
 rownames(sigs.df) = gsub("\\..*","",rownames(sigs.df))
 sigs.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(sigs.df), keytype = 'ENSEMBL', column = 'SYMBOL')
-sigs.df #changed ensembl to symbol genes
+head(sigs.df) #changed ensembl to symbol genes
 
 sigs.df_top = sigs.df[(sigs.df$baseMean > 50) & (abs(sigs.df$log2FoldChange) > 5), ] #filtering for top genes
 sigs.df_top = sigs.df_top[order(sigs.df_top$log2FoldChange, decreasing = TRUE),] #order by fold change
-sigs.df_top #up regulated first, down regulated last
+head(sigs.df_top) #up regulated first, down regulated last
 
 rlog_out = vst(dds, blind = FALSE) #normalized count from dds
 rownames(rlog_out) = gsub("\\..*","",rownames(rlog_out))
@@ -514,9 +514,6 @@ genes_down = gsub("\\..*","",genes_down)
 
 GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP')
 
-#plotting
-barplot(GO_results, showCategory = 10, title = 'Upregulated')
-barplot(GO_results2, showCategory = 10, title = 'Downregulated')
 ```
 
 ## Sobre-expressos {.unnumbered}

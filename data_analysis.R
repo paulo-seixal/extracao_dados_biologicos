@@ -182,7 +182,7 @@ summary(sigs)
 res.df = as.data.frame(res)
 rownames(res.df) = gsub("\\..*","",rownames(res.df))
 res.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(res.df), keytype = 'ENSEMBL', column = 'SYMBOL')
-res.df #changed ensembl to symbol genes
+head(res.df) #changed ensembl to symbol genes
 
 EnhancedVolcano(res.df, x= 'log2FoldChange', y = 'padj', lab = res.df$symbol,
                 pCutoff = 1e-4, FCcutoff = 1) #plot
@@ -250,7 +250,7 @@ GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENS
 #plotting
 barplot(GO_results, showCategory = 10, title = 'Upregulated')
 barplot(GO_results2, showCategory = 10, title = 'Downregulated')
-goplot(GO_results2)
+goplot(GO_results, showCategory = 5, geom = 'label')
 
 #falta sumarização dos dados
 ###### estattistica descritiva e gráficos
