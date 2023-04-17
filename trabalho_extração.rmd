@@ -43,13 +43,6 @@ div.fontdoc {font-family: georgia;}
 
 # *Packages*
 
-Instalação dos *packages*.
-
-```{r packages, eval=FALSE, echo=TRUE}
-
-
-```
-
 Importação dos *packages*.
 
 ```{r import1, message=FALSE, warning=FALSE, results='hide'}
@@ -75,7 +68,7 @@ library(genefilter)
 
 ```
 
-# Explicação dos dados, sua origem e relevância {.tabset}
+# **Explicação dos dados, sua origem e relevância** 
 
 No âmbito da Unidade Curricular Extração de Conhecimento de Dados Biológicos, inserida no 1º ano de Mestrado de Bioionformática, foi proposta a realização de um trabalho que consta a análise de um conjunto de dados usando o programa R e os packages do Bioconductor.
 
@@ -87,23 +80,16 @@ O repositório TCGA-HNSC contém informações sobre pacientes com cancro do tip
 
 A importância deste conjunto de dados reside no facto de que a análise de expressão génica poder fornecer *insights* valiosos sobre os processos moleculares subjacentes ao desenvolvimento e progressão do cancro do tipo escamoso da cabeça e pescoço. Combinando essas informações com as características clínicas dos pacientes, é possível identificar fatores de risco, prever resultados clínicos, bem como identificar alvos de desenvolvimento para novas terapias.
 
-Do repositório TCGA-HNSC foram retirados e analisados três datasets:
+Do repositório TCGA-HNSC foram retirados e analisados conjuntos de dados, específicos para três áreas distintas, que serão abordadas no tópico seguinte:
 
-## Expressão génica {.unnumbered}
+-   **Expressão génica**
 
-Neste dataset, "data_stranded_second.csv" temos os resultado obtidos através do método stranded para RNA-seq. As nossas colunas serão as amostras enquanto que as linhas serão os genes, está representado também o "gene expression count" de cada gene em cada amostra. Através do estudo desta dataset será possivél efetuar várias análises como, verificar expressão diferencial, para obtermos maior conhecimento sobre os padrões da expresão genética e as sua implicações nas funcionalidades dos genes.
+-   **Mutações**
 
-## Mutações {.unnumbered}
+-   **Metadados**
 
-O dataset "mutation_data.csv" providencia nos com data das mutações genéticas das amostras estudadas no repositório de informação do TCGA-HNSC. Este inclui tópicos como localização do cromossoma, informação sobre os alelos do tumor, classificação de variantes, entre outros dados de genética e genómica. Enquadra-se no objetivo do nosso trabalho pois temos a possibilidade de analizar os efeitos das mutações na expressão genética e o potencial impacto nas funções das proteinas. Permite também estudar a relação das mutações com o tipo de cancro HNSC e entender se tem efeito na regulação da expressão genética.
 
-## Metadados {.unnumbered}
-
-O dataset "biodata.csv" possui informação sobre as pessoas que serviram de amostra para este projeto, desde relatório da patologia, estado do tumor, e histórico de tratamento médico a número de cigarro por dia. A informação deste dataset permite aos investigadores perceber melhor o relacionamento entre as características do paciente e do tumor. Por exemplo informação sobre o tipo e estado do tumor pode ajudar a melhor perceber os diferentes niveis de expressão genética entre tecidos normais ou cancerosos.
-
-##  {.unnumbered}
-
-# *Extração dos dados e preparação de ficheiros* {.tabset}
+# **Extração dos dados e preparação de ficheiros** {.tabset}
 
 A extração dos dados do repositório TCGA-HNSC foi realizada com recurso ao package TCGABiolinks. Este package permitiu construir uma query para download de dados de expressão génica e de mutações, filtrada por tópicos como *data.category, experimental.strategy*, etc., tal como demonstrado no código apresentado de seguida.
 
@@ -152,9 +138,17 @@ write.csv(data_fpkm_unstrand, 'data_fpkm_unstrand.csv')
 
 ```
 
+Os dados de expressão génica foram divididos em dois conjuntos distintos: **data_unstranded.csv e data_fpkm_unstrand.**
+
+No "**data_unstranded.csv**" temos os dados de expressão génica obtidos através de RNA-seq unstranded. Estes dados representam a contagem total de fragmentos para cada gene, ainda sem qualquer tipo de normalização.
+
+No **'data_fpkm_unstrand.csv**' temos os dados de expressão génica, já após a normalização FPKM ( *fragments per kilobase of transcript per million*). O FPKM é importante porque permite a normalização dos níveis de expressão génica, tornando possível a comparação entre diferentes amostras ou condições. Essa normalização é necessária porque o número de leituras que se alinham a um gene pode variar dependendo do tamanho do gene, ou do tipo de sequenciamento, por exemplo.
+
+Em ambos os casos, as colunas do dataset representam as amostras enquanto que as linhas serão os genes.
+
 ## Mutações {.unnumbered}
 
-```{r mutações, eval=FALSE, warning=FALSE}
+```{r mutações, eval=FALSE, message=FALSE, warning=FALSE}
 #build query mutation data
 query_mutation = GDCquery(project = 'TCGA-HNSC',
                           data.category = 'Simple Nucleotide Variation',
@@ -174,6 +168,12 @@ mutation_data = GDCprepare(query_mutation, summarizedExperiment = TRUE)
 write_csv(mutation_data, 'mutation_data.csv')
 ```
 
+Os dados das mutações foram guardados em "mutation_data.csv". Este dataset armazena os dados das mutações genéticas das amostras estudadas no repositório de informação do TCGA-HNSC.
+
+Este inclui tópicos como localização do cromossoma, informação sobre os alelos do tumor, classificação de variantes, entre outros dados que serão analisados mais à frente.
+
+O estudo de mutações acaba por enquadrar-se no objetivo do nosso trabalho pois temos a possibilidade de analisar os efeitos das mutações na expressão genética e identificar padrões de mutação com o tipo de cancro HNSC.
+
 ## Metadados {.unnumbered}
 
 ```{r eval=FALSE}
@@ -184,9 +184,13 @@ bio_data = as.data.frame(bio_data)
 write_csv(bio_data, 'bio_data.csv')
 ```
 
-##  {.unnumbered}
+Os metadados foram armazenados no dataset "bio_data.csv". Este possui informação clínicas sobre os pacientes de onde se originaram as amostras, bem como informaç\~pes biológicas sobre a própria amostra.
 
-# Importação dos dados
+Incluem-se dados como idade, estadiamento do tumor, e histórico de tratamento médico até informações clínicas como número de cigarro por dia, ou consumo de álcool.
+
+A informação deste dataset permite aos investigadores perceber melhor o relacionamento entre as características do paciente e do tumor. Por exemplo informação sobre o tipo e estado do tumor pode ajudar a melhor perceber os diferentes níveis de expressão genética entre tecidos normais ou tumorais.
+
+# **Importação dos dados**
 
 ```{r import}
 #dataset expressão genica
@@ -204,7 +208,7 @@ De maneira a evitar o download sucessivo dos datasets, decidiu-se por armazenar 
 
 A importação dos ficheiro é demonstrada no segmento de código acima representado.
 
-# Pré-processamento
+# **Pré-processamento**
 
 ```{r preprocessing}
 #tratamento valores omissos
@@ -228,13 +232,13 @@ all(colnames(gene_data) %in% rownames(bio_data)) # True
 all(colnames(gene_data) == rownames(bio_data))
 ```
 
-O pré-processamento de dados é uma etapa fundamental para garantir resultados precisos e confiáveis. Num primeira fase optamos por verificar o número de NAs no dataset de expressão génica (gene_data e gene_data_fpkm) e nos valores do bio_data\$definition, sendo estes os fatores que serão utilizados mais à frente na análise de genes diferencialmente expressos. Estes fatores irião dividir as amostras entre 'Primary Solid Tumor' e 'Solid Tissue Normal'. Neste caso, não se registam NAs em ambos os casos
+O pré-processamento de dados é uma etapa fundamental para garantir resultados precisos e confiáveis. Num primeira fase optamos por verificar o número de NAs no dataset de expressão génica (gene_data e gene_data_fpkm) e nos valores do bio_data\$definition, sendo estes os fatores que serão utilizados mais à frente no *design* da análise de genes diferencialmente expressos. Estes fatores irão dividir as amostras entre '*Primary Solid Tumor*' e '*Solid Tissue Normal*'. Neste caso, não se registam NAs em ambos os casos.
 
 Queremos também garantir que os barcodes das amostras em ambos os datasets são os mesmos. Assim sendo, foi necessária a troca dos '-' por '.' no nome das linhas do dataset dos metadados.
 
-Uma vez que, apenas duas amostras recolhidas pertencem a tecido metastático, achamos que este número não seria suficientemente relevante para inferir sobre a diferença de expressão génica entre este tecido e outros. Assim sendo, optamos por remover as amostras correspondentes em ambos os datasets
+Uma vez que apenas duas amostras recolhidas pertencem a tecido metastático, achamos que este número não seria suficientemente relevante para inferir sobre a diferença de expressão génica, neste caso entre tecidos de metastático e os outros já referidos. Assim sendo, optou-se por remover as amostras correspondentes ao tecido metstático em ambos os datasets.
 
-# Seleção e análise sumária de variáveis {.tabset}
+# **Seleção e análise sumária de variáveis** {.tabset}
 
 Devido à elevada quantidade de variáveis que compões os datasets, optou-se por fazer uma seleção de algumas variáveis que consideramos ser de maior relevância para o caso em estudo.
 
@@ -254,41 +258,47 @@ age = bio_data$age_at_index #idade
 
 ## Tipo de tecido {.unnumbered}
 
-Nesta variável do dataset bio_data temos informação sobre a presença ou ausência de tecido tumoral nas amostras, representado pelos valores "Primary solid Tumor" e "Solid Tissue Normal", respetivamente.
+Nesta variável do dataset bio_data temos informação sobre a presença ou ausência de tecido tumoral nas amostras, representado pelos valores "*Primary solid Tumor*" e "*Solid Tissue Normal*", respetivamente.
 
-A sua utilidade para o nosso objetivo reflete na possibilidade de comparar a expressão genética nos tecidos normais e tumorais e identificar genes sub ou superregulados ajudando a perceber melhor as alterações das moléculas relacionadas com o desenvolvimento e progressão do cancro
+A sua utilidade para o nosso objetivo reflete-se na possibilidade de comparar a expressão genética nos tecidos normais e tumorais e identificar genes diferencialmente expressos.
 
-```{r tecido}
-print(dfSummary(definition), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r tecido, message=FALSE, warning=FALSE, headings = FALSE}
 #tipo de tecido
 ggplot(as.data.frame(definition), aes(x = definition, fill = stage)) + 
   geom_bar() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab('Frequencias')
+
+print(dfSummary(definition, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
 ```
+
+Numa breve análise através da função dfSummary() conseguiu-se observar que a esmagadora maioria das amostras observadas são relativas ao 'Primary Solid Tumor' (92,2%). No gráfico é possível ainda observar uma distribuição prevalente do estadiamento IV A, comparativamente aos restantes.
+
+A presença de estadiamento na coluna dos tecidos normais poderá não fazer sentido, no entanto, é importante referir que estas amostras de tecido normal, provêm de pacientes já diagnosticados com este tipo de cancro. Logo, embora seja um tecido saudável, as informações clínicas nos metadados irão fazer referência ao diagnóstico do paciente e respetivo estadiamento.
 
 ## Local do tumor {.unnumbered}
 
-A variável tissue_or_organ_of_origin providencia-nos com informação sobre o tecido ou orgão em que o tumor se desenvolveu. Ao considerar esta varíavel poderemos obter melhor contexto em relação ás células e aos seus comportamentos característicos em cada orgão e analizar como isso afeta o a progressão do tumor.
+Esta variável armazena informação sobre o tecido ou orgão em que o tumor se desenvolveu. Ao considerar esta varíavel é possível obter um melhor contexto em relação às células e aos seus comportamentos característicos em cada orgão, bem como analisar como é afetada a progressão do tumor.
 
-```{r local}
-print(dfSummary(tissue), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r local, message=FALSE, warning=FALSE, headings = FALSE}
 #Local do tumor
 ggplot(as.data.frame(tissue), aes(x = tissue, fill = stage)) + 
   geom_bar() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab('Frequencias')
+
+print(dfSummary(tissue, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
 ```
+
+Numa breve análise é possivel verificar que, na sua maioria, este cancro desenvolve-se em várias zonas da cavidade oral e orofaringe, com especial prevalência em zonas da língua (24,8%), laringe (22,5%) e lábio (14,7%).
+
+Mais uma vez, regista-se uma maior prevalência de casos em estadiamento IV A, como é possível ser verificado no gráfico apresentado.
 
 ## Sexo {.unnumbered}
 
-A variável gender deste dataset simplesmente nos informa sobre o sexo do paciente.#Ao comparar os padrões do desenvolvimento de cancro e mudanças na expressão genética entre homem e mulher, podemos ter um melhor entendimento na presença ou não da intervenção que os mecanismos específicos de cada sexo podem ter e o quão impactante será. age = bio_data\$age_at_index
+Esta variável armazena informações sobre o sexo do paciente. A partir destes dados podemos inferir relativamente à prevalência de casos quanto ao sexo do paciente no presente estudo.
 
-```{r sexo}
-print(dfSummary(gender), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r sexo, message=FALSE, warning=FALSE, headings = FALSE}
 #Sexo
 ggplot(as.data.frame(gender), aes(x = gender, fill = gender)) + 
   geom_bar() +
@@ -296,56 +306,76 @@ ggplot(as.data.frame(gender), aes(x = gender, fill = gender)) +
             stat = "count", vjust = -0.5, size = 5) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab('Frequencias')
+
+print(dfSummary(gender, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
 ```
+
+Segundo os dados obtidos, podemos concluir que há uma maior representação de homens (72%) comparativamente a mulheres (28%).
 
 ## Idade {.unnumbered}
 
-A variável age_at_index representa a idade em qual os pacientes foram diagnosticados com cancro. Com estes dados podemos associar os biomarcadores específicos e diferenças nos mecanismos de cada idade, ao motivo do desenvolvimento e da localização do cancro.
+Esta varriável representa a idade com que os pacientes foram diagnosticados com cancro. Com estes dados podemos identificar padrões de como este tipo de cancro possa estar associado a grupos etários específicos.
 
-```{r idade}
-print(dfSummary(age), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r idade, message=FALSE, warning=FALSE, headings = FALSE}
 #idade
 ggplot(as.data.frame(age), aes(x = age)) + 
   geom_histogram(bins = 20, fill = 'lightblue', color = 'black') + 
   labs(title = 'Idades', x = 'Idade', y = 'Frequencias')
+
+print(dfSummary(age, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
 ```
+
+E de esperar que a idade do diagnóstico seja tendencialmente mais avançada devido ao cariz mutacional da doença. Ou seja, a maior probabilidade de mutações espontâneas, bem como a acumulação de exposição a agentes externos carcinogénicos, leva-nos a associar grande parte dos tipos de cancro a idades mais avançadas.
+
+Este facto é corroborado pelos resultados apresentados, onde se regista uma média de 61 anos de idade no diagnóstico, sendo que a esmagadora maioria dos pacientes apresenta idade superiores a aproximadamente 50 anos.
 
 ## Tabaco {.unnumbered}
 
-A variável pack_years_smoked representa o número de maços de tabaco consumidos em média por cada ano pelas amostras. Assim podemos tentar correlacionar a quantidade responsável de exposição ao tabaco com mudanças na expressão genética e desenvolvimento do cancro.
+Esta variável representa os hábitos tabágicos dos pacientes. Com estes dados podemos tentar identificar padrões de associação de exposição ao tabaco com o desenvolvimento do cancro.
 
-```{r tabaco}
-print(dfSummary(smoke), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r tabaco, message=FALSE, warning=FALSE}
 #tabaco
 ggplot(as.data.frame(smoke_disc), aes(x = smoke_disc)) +
   geom_bar() +
   ylab('Frequencias')
+
+print(dfSummary(smoke, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
+
 ```
+
+Visto que se trata de um tumor na zona da cabeça e pescoço, este fator apresenta-se com grande relevância para o estudo. Desta forma foi feita uma categorização entre fumador e não fumador, onde se assumiu os NAs como sendo não fumadores.
+
+Relativamente aos resultados obtidos, em dfSummary podemos observar que os fumadores fumam uma média de 46 maços por ano.
+
+No entanto, as amostras entre os fumadores e os não-fumadores apresentam-se bastante equilibradas, com 55,9% para os fumadores e 44,1% para os não fumadores.
 
 ## Álcool {.unnumbered}
 
-A variável alcohol_history representa se as amostras tiveram contacto com álcool ou bebidas alcoólicas no passado. Com isto podemos ponderar nas relações que a utilização do álcool pode ter com a expressão genética em células tumorais.
+Esta variável representa consumo de álcool dos pacientes. Com estes dados podemos tentar identificar padrões de associação de consumo de álcool com o desenvolvimento do cancro.
 
-```{r alcool}
-print(dfSummary(alcohol), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r alcool, message=FALSE, warning=FALSE, headings = FALSE}
 #alcool
 ggplot(as.data.frame(alcohol), aes(x = alcohol, fill = alcohol)) + 
   geom_bar() +
   geom_text(aes(label = paste0(round((..count..)/sum(..count..) * 100), "%")), 
             stat = "count", vjust = -0.5, size = 5) + 
   ylab('Frequencies')
+
+print(dfSummary(alcohol, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
+
 ```
+
+Face aos resultados obtidos, observa-se que 66% dos pacientes eram consumidores de álcool. No entanto, as informações clínicas no paciente não faziam menção à frequência do consumo.
+
+Assim sendo, embora estes resultados possam levar a uma conclusão de que o consumo de álcool possa ser identificado como um fator de risco para o desenvolvimento deste tipo de cancro, a escassez de informação também deve ser tida em conta.
+
+Informações quanto à frequência do consumo, devem também ser registadas.
 
 ## Estadiamento {.unnumbered}
 
 A variável ajcc_clinical_stage representa a extensão da progressão do tumor na respetiva amostra com valores que são denominados de forma crescente como "Stage I", "Stage II", "Stage III", "Stage IVA", "Stage IVB". Com esta informação as amostras poderam ser agrupadas por grupos e analisadas no que toca aos padrões de expressão genética de cada grupo, comparando-os.
 
-```{r estadiamento}
-print(dfSummary(stage), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
-
+```{r estadiamento, message=FALSE, warning=FALSE, headings = FALSE}
 s = as.data.frame(stage)
 stage_freq = table(s$stage)
 df = data.frame(stage = stage(stage_freq), freq = as.numeric(stage_freq))
@@ -357,15 +387,19 @@ pct = round(slices/sum(slices)*100)
 new_labels = paste(names, ' - ', slices, '(', pct, '%',')', sep="")
 
 pie(slices, labels = new_labels, main = "Estadiamento do tumor", col = rainbow(6))
+
+print(dfSummary(stage, headings = FALSE), style = 'grid', dfSummary.silent  = TRUE, method = 'render')
 ```
 
-##  {.unnumbered}
+Face aos resultados obtidos, verificamops que o estadiamento com maior prevalência nas amostras é o *Stage IVA.*
 
-# Mutações
+O estadiamento IV A caracteriza-se clinicamente pela presença de metsastases em orgãos adjacentes ao local original, bem como vários nódulos linfáticos próximos
 
-Através do package *maftools,* foi realizado um breve estudo de mutações. O seu estudo é importante porque fornece uma maneira eficaz de analisar e visualizar dados complexos de mutação, permitindo identificar padrões e relações importantes e encontrar possíveis novos alvos terapêuticos.
+# **Mutações**
 
-```{r mutacoes2, message=FALSE, warning=FALSE, out.width = '1750px'}
+Através do package *maftools,* foi realizado um breve estudo de mutações. O seu estudo é importante porque fornece uma maneira eficaz de analisar e visualizar dados complexos de mutação, permitindo identificar padrões e relações importantes, bem como encontrar possíveis novos alvos terapêuticos.
+
+```{r mutacoes2, message=FALSE, warning=FALSE, out.width= '1750px'}
 maftools_input = read.maf(mutation_data)
 
 plotmafSummary(maf = maftools_input,
@@ -374,7 +408,9 @@ plotmafSummary(maf = maftools_input,
 
 ```
 
-Numa breve análise dos gráficos acima podemos concluir que a esmagadora maioria das mutações rencontradas nas amostras analisadas são mutações missense. Este tipo de mutações são mutações pontuais no qual uma única alteração de um nucleótido resulta na codificação de um aminoácido diferente. Vemos também que
+Numa breve análise dos gráficos acima podemos concluir que a esmagadora maioria das mutações encontradas nas amostras analisadas são mutações missense. Este é um tipo de mutações pontuais no qual uma única alteração de um nucleótido resulta na codificação de um aminoácido diferente. É também possível observar que o tipo de mutação predominante é o *single nucleotide polymorphism (SNP)* onde é mais comum ocorrer a substituição de uma Citosina pela Timina. Neste estudo verifica-se também o top 10 de genes com maior associação a mutações, sendo que os genes mais afetados são o TP53 e o TTN.
+
+Ambos os genes TP53 e TTN são frequentemente associados a patologias tumorais. O TP53 codifica uma proteina responsável pela regulação da divisão celular, atuando como supressor tumoral. O TTN codifica uma proteina que pareticipa na contração muscular, também regularmente associada a tumores do tipo escamoso, como é o caso do HNSC.
 
 ```{r mutacoes3, message=FALSE, warning=FALSE, out.width = '1750px'}
 
@@ -383,7 +419,9 @@ oncoplot(maf = maftools_input,
          removeNonMutated = TRUE)
 ```
 
-# Filtragem do dataset através de análise univariada
+No gráfico acima, é possível de se obvservar a existência de alguns picos onde se verifica em um caso a existência de 2634 de TMB (*Total number of mutations found in the DNA of cancer cells*). Aqui dá para se ter uma visão abrangente da presença de mutações por paciente, bem como o tipo de mutação.
+
+# **Filtragem do dataset através de análise univariada**
 
 ```{r analise univariada, message=FALSE, warning=FALSE}
 
@@ -399,7 +437,19 @@ gene_data = gene_data[rownames(gene_data) %in% rownames(tt)[rows],]
 dim(gene_data) #passa a contar apenas com os 10000 genes de menor p-value
 ```
 
-# Análise da expressão diferencial
+Antes da análise de expressão diferencial propriamente dita, optou-se por fazer uma filtragem do dataset inicial, de forma a que o mesmo seja composto pelos genes com maior probabilidade de serem diferencialmente expressos.
+
+Assim sendo, foi aplicada a função *rowttests()* que aplica o t-test no dataset, dividindo em dois grupos (tecido normal e tecido tumoral)
+
+Após se efetuar o t-test a cada gene, ordenou-se os 10 000 genes com menor p-value, numa lista que será usada para filtrar o dataset gene_data, de forma a que este passe a ter apenas os 10 000 genes.
+
+É importante referir que para aplicar o *rowttests(*) foi necessário usar o dataset **gene_data_fpkm**, pois este já apresenta valores normalizados, permitindo assim uma comparação mais fiável entre as amostras.
+
+# **Análise da expressão diferencial**
+
+Na análise da expressão diferencial de genes o objetivo é observar se existe uma alteração estatisticamente significativa na expressão de genes entre duas condições experimentais.
+
+Uma vez que o package **DEseq2** requer o uso de contagens não normalizadas do fragmentos, utilizou-se o ***gene_data*** construído no ponto anterior, e os metadados referentes em ***bio_data** (*neste caso a coluna *definition* para o *design*).
 
 ```{r expressão diferencial, message=FALSE, warning=FALSE}
 dds = DESeqDataSetFromMatrix(countData = gene_data,
@@ -419,14 +469,32 @@ bio_data$definition = relevel(as.factor(bio_data$definition), ref = 'Solid Tissu
 #run DESeq
 dds = DESeq(dds)
 
+```
 
+Embora não seja necessário pré-filtrar genes de baixa contagem antes de executar as funções *DESeq2*, existem duas razões que tornam esta filtragem útil: ao remover linhas em que há muito poucas leituras, reduzimos o tamanho da memória do objeto de dados e aumentamos a velocidade das funções dentro do DESeq2. Esta filtragem pode também melhorar visualizações, já que recursos sem informações para expressão diferencial não serão incluidos nos gráficos.
+
+```{r expressao diferencial2, message=FALSE, warning=FALSE}
 #Quality control - idealmente condições semelhantes no mesmo cluster
 vsdata = vst(dds, blind = FALSE)
 plotPCA(vsdata, intgroup = 'definition')
 
+```
+
+A partir do gráfico PCA conseguimos identificar similaridades e diferenças entre os grupos de amostras (tecido normal vs tecido tumoral) com base nos seus perfis de expressão génica. Neste caso, verifica-se um agrupamento com limites bem definidos, o que demonstra uma expressão génica semelhante entre amostras do mesmo grupo de estudo.
+
+Embora este gráfico não nos permita tirar conclusões definitivas quanto aos genes diferencialemente expressos, pode funcionar como um controlo de qualidade. Uma dispersão de genes por todo o gráfico, sem grupos claramente deinidos, pode significar um erro no processo experimental.
+
+```{r expressão diferencial3, message=FALSE, warning=FALSE}
+
 #dispersion plot
 plotDispEsts(dds)
+```
 
+No gráfico de dispersão acima, é esperado que os dados se disponham em torno da curva, com a dispersão diminuindo com o aumento dos níveis médios de expressão.
+
+No entanto, e embora não seja um caso extremo, os dados observados não apresentam uma diminuição da dispersão desejável ao longo do gráfico, com a mesma a estagnar nos valores próximos de 1.
+
+```{r expressão diferencial4}
 #get results from DESeq 
 res = results(dds, alpha = 0.05)
 summary(res)
@@ -437,97 +505,67 @@ sigs = sigs[sigs$padj < 0.05,]
 
 #explore results
 summary(sigs)
-
 ```
 
-Embora não seja necessário pré-filtrar genes de baixa contagem antes de executar as funções DESeq2, existem duas razões que tornam esta filtragem útil: ao remover linhas em que há muito poucas leituras, reduzimos o tamanho da memória do objeto de dados e aumentamos a velocidade das funções dentro do DESeq2. Esta filtragem pode também melhorar visualizações, já que recursos sem informações para expressão diferencial não serão incluidos nos gráficos.
+Os resultados obtidos no DESeq (variavel **res)** foram depois filtrados para uma nova variável (variável **sigs**) de forma a que sejam apresentados apenas os genes mais significativos, com um *p.adjusted* inferior a 0.05.
+
+Neste caso, foi possível encontrar 3800 genes sobre-regulados (com log2 fold change superior a 0) e 3919 genes sub-regulados (com log2 fold change inferior a 0), que serão estudados de seguida.
 
 ## Volcano plot
 
-```{r volcano, out.width= '1000px'}
+```{r volcano, message=FALSE, warning=FALSE, out.width= '1750px'}
 #volcano plot
-res.df = as.data.frame(res)
-rownames(res.df) = gsub("\\..*","",rownames(res.df))
-res.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(res.df), keytype = 'ENSEMBL', column = 'SYMBOL')
-head(res.df) #changed ensembl to symbol genes
-
-EnhancedVolcano(res.df, x= 'log2FoldChange', y = 'padj', lab = res.df$symbol,
-                pCutoff = 1e-4, FCcutoff = 1) #plot
-```
-
-## Heat map
-
-```{r heatmap, out.width= '1750px'}
-#heatmap
 sigs.df = as.data.frame(sigs)
 rownames(sigs.df) = gsub("\\..*","",rownames(sigs.df))
 sigs.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(sigs.df), keytype = 'ENSEMBL', column = 'SYMBOL')
-head(sigs.df) #changed ensembl to symbol genes
+#changed ensembl to symbol genes
 
-sigs.df_top = sigs.df[(sigs.df$baseMean > 50) & (abs(sigs.df$log2FoldChange) > 5), ] #filtering for top genes
-sigs.df_top = sigs.df_top[order(sigs.df_top$log2FoldChange, decreasing = TRUE),] #order by fold change
-head(sigs.df_top) #up regulated first, down regulated last
-
-rlog_out = vst(dds, blind = FALSE) #normalized count from dds
-rownames(rlog_out) = gsub("\\..*","",rownames(rlog_out))
-mat = assay(rlog_out)[rownames(sigs.df_top), rownames(bio_data)] #matrix sig genes x samples
-colnames(mat) = NULL
-base_mean = rowMeans(mat)
-mat.scaled = t(apply(mat, 1, scale)) #center and scale each column, then transpose
-colnames(mat.scaled) = colnames(mat)
-
-num_keep = 25
-rows_keep = c(seq(1:num_keep), seq((nrow(mat.scaled)-num_keep), nrow(mat.scaled)))
-
-l2_val =as.matrix(sigs.df_top[rows_keep,]$log2FoldChange) 
-colnames(l2_val) = 'logFC'
-
-col_logFC = colorRamp2(c(min(l2_val),0, max(l2_val)), c("blue", "white", "red")) 
-
-
-
-ha <- HeatmapAnnotation(summary = anno_summary(gp = gpar(fill = 2), 
-                                               height = unit(2, "cm")))
-h1 <- Heatmap(mat.scaled[rows_keep,], cluster_rows = F, 
-              column_labels = colnames(mat.scaled), name="Z-score",
-              cluster_columns = T)
-h2 <- Heatmap(l2_val, row_labels = sigs.df_top$symbol[rows_keep], 
-              cluster_rows = F, name="logFC", top_annotation = ha, col = col_logFC)
-
-h<-h1+h2
-h
+EnhancedVolcano(sigs.df, x= 'log2FoldChange', y = 'padj', lab = sigs.df$symbol, pCutoff = 1e-4, FCcutoff = 1) #plot
 ```
 
-# Análise de enriquecimento {.tabset}
+Através da análise do volcano plot acima representado, podemos identificar alguns dos genes diferencialmente expressos nos tecidos normais e tumorais.
+
+Os genes dos quadrantes superior direito como HTN1, SMR3B ou CST4, representam genes sobre-regulados, enquanto que genes no quadrante superior esquerdo como CA9, IL11 ou G2E3-AS1 representam genes que são sub-regulados
+
+Os genes nos quadrantes inferiores não são diferencialmente expressos significativamente.
+
+# **Análise de enriquecimento** {.tabset}
+
+A partir da análise de enriquecimento podemos retirar informações sobre os processos biológicos subjacentes que são afetados pelas mudanças na expressão génica e ajudar a identificar possíveis alvos terapêuticos.
 
 ```{r enriquecimento}
+
 #sobre-expressos
-genes_up = rownames(sigs.df)[sigs.df$log2FoldChange > 2]
-genes_up = gsub("\\..*","",genes_up)
+genes_up = rownames(sigs)[sigs$log2FoldChange > 2]
+genes_up = gsub("\\..*","",genes_up) #retirar números à frente do ponto, no código ensembl
 
 GO_results = enrichGO(gene = genes_up, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP')
 
 
 #sub-expressos
-genes_down = rownames(sigs.df)[sigs.df$log2FoldChange < -2]
+genes_down = rownames(sigs)[sigs$log2FoldChange < -2]
 genes_down = gsub("\\..*","",genes_down)
 
 GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP')
 
 ```
 
+Na análise de enriquecimento, optou-se por selecionar e agrupar os ids ensembl dos genes, por grupos de sobre-expressos e sub-expressos. Foram selecionados os genes com um log2 fold change superior a 2 (para os sobre-expressos) e inferior a -2 (para os sub-expressos).
+
+A partir destes ids, com a função *enrichGO,* é possível pesquisar e associar estes grupos de genes aos respetivos processos biológicos.
+
 ## Sobre-expressos {.unnumbered}
 
 ```{r enriquecimento up}
 barplot(GO_results, showCategory = 10, title = 'Upregulated')
-goplot(GO_results)
 ```
+
+Nos genes sobre-expressos notamos uma clara incidência sobre processos biológicos relativos ao desenvolvimento e processos musculares.
 
 ## Sub-expressos {.unnumbered}
 
 ```{r enriquecimento down}
 barplot(GO_results2, showCategory = 10, title = 'Downregulated')
-goplot(GO_results2)
 ```
 
-##  {.unnumbered}
+Nos genes sub-expressos, notamos uma incidência em genes que participam em funções de organização de estrutura celular e tecidular, bem como em mecanismos de diferenciação celular.

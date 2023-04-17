@@ -16,6 +16,7 @@ library(ComplexHeatmap)
 library(RColorBrewer)
 library(circlize)
 library(genefilter)
+library(pheatmap)
 
 
 #import
@@ -67,7 +68,6 @@ rownames(tt)[rows] #genes com menor p-value, logo com maior probabilidade de ser
 #filtrar dataset de contagens v«elos valores anteriores
 gene_data = gene_data[rownames(gene_data) %in% rownames(tt)[rows],]
 dim(gene_data) #passa a contar apenas com os 10000 genes de menor p-value
-
 
 #Análise inicial dos dados------------------------------------------------------------------
 #tipo de tecido
@@ -192,57 +192,18 @@ EnhancedVolcano(res.df, x= 'log2FoldChange', y = 'padj', lab = res.df$symbol,
 plotMA(sigs)
 
 
-#heatmap
-sigs.df = as.data.frame(sigs)
-rownames(sigs.df) = gsub("\\..*","",rownames(sigs.df))
-sigs.df$symbol = mapIds(org.Hs.eg.db, keys = rownames(sigs.df), keytype = 'ENSEMBL', column = 'SYMBOL')
-sigs.df #changed ensembl to symbol genes
-
-sigs.df_top = sigs.df[(sigs.df$baseMean > 50) & (abs(sigs.df$log2FoldChange) > 5), ] #filtering for top genes
-sigs.df_top = sigs.df_top[order(sigs.df_top$log2FoldChange, decreasing = TRUE),] #order by fold change
-sigs.df_top #up regulated first, down regulated last
-
-rlog_out = vst(dds, blind = FALSE) #normalized count from dds
-rownames(rlog_out) = gsub("\\..*","",rownames(rlog_out))
-mat = assay(rlog_out)[rownames(sigs.df_top), rownames(bio_data)] #matrix sig genes x samples
-colnames(mat) = NULL
-base_mean = rowMeans(mat)
-mat.scaled = t(apply(mat, 1, scale)) #center and scale each column, then transpose
-colnames(mat.scaled) = colnames(mat)
-
-num_keep = 25
-rows_keep = c(seq(1:num_keep), seq((nrow(mat.scaled)-num_keep), nrow(mat.scaled)))
-
-l2_val =as.matrix(sigs.df_top[rows_keep,]$log2FoldChange) 
-colnames(l2_val) = 'logFC'
-
-col_logFC = colorRamp2(c(min(l2_val),0, max(l2_val)), c("blue", "white", "red")) 
-
-
-
-ha <- HeatmapAnnotation(summary = anno_summary(gp = gpar(fill = 2), 
-                                               height = unit(2, "cm")))
-h1 <- Heatmap(mat.scaled[rows_keep,], cluster_rows = F, 
-              column_labels = colnames(mat.scaled), name="Z-score",
-              cluster_columns = T)
-h2 <- Heatmap(l2_val, row_labels = sigs.df_top$symbol[rows_keep], 
-              cluster_rows = F, name="logFC", top_annotation = ha, col = col_logFC)
-
-h<-h1+h2
-h
-
 
 #Enrichment analysis--------------------------------------------------------------------------
 
 #sobre-expressos
-genes_up = rownames(sigs.df)[sigs.df$log2FoldChange > 2]
+genes_up = rownames(sigs)[sigs$log2FoldChange > 2]
 genes_up = gsub("\\..*","",genes_up)
 
 GO_results = enrichGO(gene = genes_up, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP')
 
 
 #sub-expressos
-genes_down = rownames(sigs.df)[sigs.df$log2FoldChange < -2]
+genes_down = rownames(sigs)[sigs$log2FoldChange < -2]
 genes_down = gsub("\\..*","",genes_down)
 
 GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENSEMBL', ont = 'BP')
@@ -250,12 +211,6 @@ GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENS
 #plotting
 barplot(GO_results, showCategory = 10, title = 'Upregulated')
 barplot(GO_results2, showCategory = 10, title = 'Downregulated')
-goplot(GO_results, showCategory = 5, geom = 'label')
 
-#falta sumarização dos dados
-###### estattistica descritiva e gráficos
 
-#falta analise estatistica univariada
-
-#falta analise de expressao diferencial e analise de enriquecimento
 
