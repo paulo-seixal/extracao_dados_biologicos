@@ -569,3 +569,24 @@ barplot(GO_results2, showCategory = 10, title = 'Downregulated')
 ```
 
 Nos genes sub-expressos, notamos uma incidência em genes que participam em funções de organização de estrutura celular e tecidular, bem como em mecanismos de diferenciação celular.
+                                                     
+
+## Clustering {.unnumbered}
+```
+top_genes <- gene_data_fpkm[rank[1:50], ]
+gene_names <- rownames(top_genes)  # Extrair nomes dos genes
+
+# Calculate Euclidean distance
+eucD4 <- dist(top_genes)
+cl.hier5 <- hclust(eucD4)
+plot(cl.hier5)
+
+cl.hier2 <- hclust(eucD4, method="single")
+plot(cl.hier2)
+
+cl.hier3 <- hclust(eucD4, method="average") #não está a funcionar
+plot(cl.hier3)
+
+
+```
+Após uma redução dos 10 000 mais diferencialmente expressos para apenas 50, é calculada a distância Euclidiana entre os *top_genes* e por fim é efetuado um clustering hierárquico através de um dendograma. #ainda me falta intrepertar
