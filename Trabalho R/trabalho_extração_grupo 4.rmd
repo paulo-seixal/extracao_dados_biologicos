@@ -576,12 +576,12 @@ Nos genes sub-expressos, notamos uma incidência em genes que participam em fun�
 top_genes <- gene_data_fpkm[rank[1:50], ]
 gene_names <- rownames(top_genes)  # Extrair nomes dos genes
 
-# Calculate Euclidean distance
+# Calcular distância euclidiana
 eucD4 <- dist(top_genes)
 cl.hier5 <- hclust(eucD4)
 plot(cl.hier5)
 
-cl.hier2 <- hclust(eucD4, method="single")
+cl.hier2 <- hclust(eucD4, method="single") 
 plot(cl.hier2)
 
 cl.hier3 <- hclust(eucD4, method="average") #não está a funcionar
@@ -589,4 +589,4 @@ plot(cl.hier3)
 
 
 ```
-Após uma redução dos 10 000 mais diferencialmente expressos para apenas 50, é calculada a distância Euclidiana entre os *top_genes* e por fim é efetuado um clustering hierárquico através de um dendograma. #ainda me falta intrepertar
+Após uma redução dos 10 000 mais diferencialmente expressos para apenas 50, é calculada a distância Euclidiana entre os *top_genes* e por fim são efetuados clusterings hierárquicos, representados através de dendogramas. Um com o método "single" onde são considerados os dois pontos mais próximos entre dois clusters para calcular a diferença entre estes, e outro com o método "average" onde é feita uma média de distância entre todos os pontos de 2 clusters resultando numa comparação mais balanceada. #ainda me falta intrepertar
