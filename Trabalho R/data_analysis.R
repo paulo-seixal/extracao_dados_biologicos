@@ -17,7 +17,13 @@ library(RColorBrewer)
 library(circlize)
 library(genefilter)
 library(pheatmap)
-
+library(Glimma)
+library(caret)
+library(rpart)
+library(MLeval)
+library(doParallel)
+library(RColorBrewer)
+library(rattle)
 
 #import
 gene_data = as.matrix(read.csv('data_unstranded.csv', row.names = 1))
@@ -212,5 +218,282 @@ GO_results2 = enrichGO(gene = genes_down, OrgDb = 'org.Hs.eg.db', keyType = 'ENS
 barplot(GO_results, showCategory = 10, title = 'Upregulated')
 barplot(GO_results2, showCategory = 10, title = 'Downregulated')
 
+#Filtering dds - apresentar apenas genes significativos (p_adjusted < 0.05)------------------
+dds_filtered <- dds[rownames(dds) %in% rownames(sigs), ]
+all(rownames(dds_filtered) %in% rownames(sigs)) #True
+
+#Clustering--------------------------------------------------------------
+rank = order(sigs$padj)
+top_genes <- dds_filtered[rank[1:20], ]
+gene_names <- rownames(dds_filtered)  # Extrair nomes dos genes
 
 
+normal_samples <- top_genes[, colData(top_genes)$definition == "Solid Tissue Normal"]
+set.seed(42)  # Set a seed for reproducibility
+normal_samples <- normal_samples[, sample(ncol(normal_samples), size = 20)]
+tumoral_samples <- top_genes[, colData(top_genes)$definition == "Primary solid Tumor"]
+set.seed(42)  # Set a seed for reproducibility
+tumoral_samples <- tumoral_samples[, sample(ncol(tumoral_samples), size = 20)]
+combined_samples <- cbind(normal_samples, tumoral_samples)
+
+# Calcular distância euclidiana
+
+eucD4 <- dist(t(assay(combined_samples)))
+cl.hier5 <- hclust(eucD4)
+plot(cl.hier5, labels=colData(combined_samples)$definition)
+
+cl.hier2 <- hclust(eucD4, method="single") 
+plot(cl.hier2,labels=colData(combined_samples)$definition)
+
+cl.hier3 <- hclust(eucD4, method="average")
+plot(cl.hier3,labels=colData(combined_samples)$definition)
+assay_top_genes = t(assay(combined_samples))
+ofs = c()
+
+for (k in 2:10) {
+  kmeans = kmeans(assay_top_genes, centers = k, nstart = 10)
+  ofs = c(ofs, kmeans$tot.withinss)
+}
+
+plot = data.frame(num_clusters = 2:10, wss = ofs)
+
+ggplot(plot, aes(x = num_clusters, y = wss)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Clusters", y = "WSS") +
+  ggtitle('Elbow Method')
+
+
+
+var_kmeans = kmeans(assay_top_genes, centers = 2)   
+var_kmeans
+plot(rlog(assay_top_genes), col = var_kmeans$cluster, pch = 16)
+
+
+
+
+#Multidimensional Scaling---------------------------------------------------------------------
+
+glimmaMDS(dds_filtered)
+
+
+#Machine Learning----------------------------------------------------------------------------
+
+#test and training set
+count_data <- t(assay(dds_filtered))
+labels <- as.factor(bio_data$definition)
+
+# Split  data
+set.seed(123)  # For reproducibility
+train_indices <- sample(1:nrow(count_data), nrow(count_data) * 0.75)  # 75% for training
+x_train <- count_data[train_indices, ]
+y_train <- labels[train_indices]
+x_test <- count_data[-train_indices, ]
+y_test <- labels[-train_indices]
+
+#transform labels into viable names
+y_train = make.names(c(y_train), unique = FALSE)
+y_test = make.names(c(y_test), unique = FALSE)
+
+#check sizes
+dim(x_train)
+length(y_train)
+dim(x_test)
+length(y_test)
+
+#Função auxiliar para plot da matriz de confusão----------------------------------------
+
+
+draw_confusion_matrix <- function(cm, title) {
+  
+  layout(matrix(c(1,1,2)))
+  par(mar=c(2,2,2,2))
+  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
+  title(title, cex.main=2)
+  
+  # create the matrix 
+  rect(150, 430, 240, 370, col='#3F97D0')
+  text(195, 435, 'Solid.Tissue.Normal', cex=1.2)
+  rect(250, 430, 340, 370, col='#F7AD50')
+  text(295, 435, 'Primary.solid.Tumor', cex=1.2)
+  text(125, 370, 'Actual', cex=1.3, srt=90, font=2)
+  text(245, 450, 'Predicted', cex=1.3, font=2)
+  rect(150, 305, 240, 365, col='#F7AD50')
+  rect(250, 305, 340, 365, col='#3F97D0')
+  text(140, 400, 'Solid.Tissue.Normal', cex=1.2, srt=90)
+  text(140, 335, 'Primary.solid.Tumor', cex=1.2, srt=90)
+  
+  # add in the cm results 
+  res <- as.numeric(cm$table)
+  text(195, 400, res[1], cex=1.6, font=2, col='white')
+  text(195, 335, res[2], cex=1.6, font=2, col='white')
+  text(295, 400, res[3], cex=1.6, font=2, col='white')
+  text(295, 335, res[4], cex=1.6, font=2, col='white')
+  
+  # add in the specifics 
+  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "DETAILS", xaxt='n', yaxt='n')
+  text(10, 85, names(cm$byClass[1]), cex=1.2, font=2)
+  text(10, 70, round(as.numeric(cm$byClass[1]), 3), cex=1.2)
+  text(30, 85, names(cm$byClass[2]), cex=1.2, font=2)
+  text(30, 70, round(as.numeric(cm$byClass[2]), 3), cex=1.2)
+  text(50, 85, names(cm$byClass[5]), cex=1.2, font=2)
+  text(50, 70, round(as.numeric(cm$byClass[5]), 3), cex=1.2)
+  text(70, 85, names(cm$byClass[6]), cex=1.2, font=2)
+  text(70, 70, round(as.numeric(cm$byClass[6]), 3), cex=1.2)
+  text(90, 85, names(cm$byClass[7]), cex=1.2, font=2)
+  text(90, 70, round(as.numeric(cm$byClass[7]), 3), cex=1.2)
+  
+  # add in the accuracy information 
+  text(30, 35, names(cm$overall[1]), cex=1.5, font=2)
+  text(30, 20, round(as.numeric(cm$overall[1]), 3), cex=1.4)
+  text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
+  text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
+  
+  text(50, -15, "Positive class: Primary.solid.Tumor", cex=1.2, font=2)
+} 
+
+#SVM------------------------------------
+ctrl = trainControl(method = "repeatedcv", number = 5, repeats = 5, savePredictions = TRUE, classProbs = TRUE)
+start.time = proc.time()
+svm_model = train(x = x_train, y= y_train, method = 'svmLinear', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+
+y_svm_predict = predict(svm_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_svm_predict, mode = 'everything'), title = 'Confusion Matrix - SVM')
+
+#SVM com parallel-------------------------------------
+
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+svm_model = train(x = x_train, y= y_train, method = 'svmLinear', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+stopCluster(cl)
+
+y_svm_predict = predict(svm_model, newdata = x_test)
+confusionMatrix(as.factor(y_test), y_svm_predict, mode = 'everything')
+
+importance_svm = varImp(svm_model)
+plot(importance_svm, top=20, main='Features (genes) mais importantes - SVM')
+
+
+#SVM com otimização-----------------------------------------------
+
+# svmGrid <- expand.grid(C=c(0.05, 0.5, 1, 2, 5, 8, 10))
+# cl = makePSOCKcluster(5)
+# registerDoParallel(cl)
+# start.time = proc.time()
+# svm_model_tuned = train(x = x_train, y= y_train, method = 'svmLinear', trControl = ctrl, tuneGrid = svmGrid)
+# stop.time = proc.time()
+# run.time= stop.time - start.time
+# print(run.time)
+# stopCluster(cl)
+# y_svm_grid_predict = predict(svm_model_tuned, newdata = x_test)
+# confusionMatrix(as.factor(y_test), y_svm_grid_predict, mode = 'everything')
+
+#Decision Tree---------------------------------
+
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+decision_tree_model = train(x = x_train, y= y_train, method = 'rpart', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+stopCluster(cl)
+y_tree_predict = predict(decision_tree_model, newdata = x_test)
+confusionMatrix(as.factor(y_test), y_tree_predict, mode = 'everything')
+
+importance_tree= varImp(decision_tree_model)
+plot(importance_tree, top=20, main='Features (genes) mais importantes - Decision Tree')
+
+fancyRpartPlot(decision_tree_model$finalModel)
+#MLP------------------------------------
+
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+mlp_model = train(x = x_train, y= y_train, method = 'mlp', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+stopCluster(cl)
+y_mlp_predict = predict(mlp_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_mlp_predict, mode = 'everything'), title = 'Confusion Matrix - MLP')
+
+importance_mlp = varImp(mlp_model)
+plot(importance_mlp, top=20, main='Features (genes) mais importantes - Multi-Layer Perceptron')
+
+
+
+#KNN---------------------------------------------------
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+knn_model = train(x = x_train, y= y_train, method = 'knn', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+stopCluster(cl)
+y_knn_predict = predict(knn_model, newdata = x_test)
+confusionMatrix(as.factor(y_test), y_knn_predict, mode = 'everything')
+
+importance_knn = varImp(knn_model)
+plot(importance_knn, top=20, main='Features (genes) mais importantes - KNN')
+#KNN com otimização--------------------------------------
+#knnGrid = expand.grid(k =c(1:10) )
+#cl = makePSOCKcluster(5)
+#registerDoParallel(cl)
+#start.time = proc.time()
+#knn_model_tuned = train(x = x_train, y= y_train, method = 'knn', trControl = ctrl, tuneGrid = knnGrid)
+#stop.time = proc.time()
+#run.time= stop.time - start.time
+#print(run.time)
+#stopCluster(cl)
+#y_knn_grid_predict = predict(knn_model_tuned, newdata = x_test)
+#confusionMatrix(as.factor(y_test), y_knn_grid_predict, mode = 'everything')
+
+#Naive Bayes---------------------------------------------------
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+nb_model = train(x = x_train, y= y_train, method = 'naive_bayes', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+stopCluster(cl)
+y_nb_predict = predict(nb_model, newdata = x_test)
+confusionMatrix(as.factor(y_test), y_nb_predict, mode = 'everything')
+
+importance_nb = varImp(nb_model)
+plot(importance_nb, top=20, main='Features (genes) mais importantes - Naive Bayes')
+
+#Curvas ROC------------------------
+res_roc = evalm(list(decision_tree_model, knn_model, mlp_model, nb_model, svm_model), positive = 'Primary.solid.Tumor', gnames = c('Decision Tree','KNN','Multilayer Perceptron', 'Naive Bayes','SVM'), plots = 'r', title = 'ROC-Curves', rlinethick = 0.8, cols = c('red','blue','green','darkgreen','purple'))
+res_pr = evalm(list(decision_tree_model, knn_model, mlp_model,nb_model, svm_model), positive = 'Primary.solid.Tumor', gnames = c('Decision Tree','KNN','Multilayer Perceptron','Naive Bayes', 'SVM'), plots = 'prg', title = 'Precision-Recall Curves', rlinethick = 0.8, cols = c('red','blue','green','darkgreen','purple'))
+
+y_svm_predict_prob = predict(svm_model, newdata = x_test, type = 'prob')
+y_tree_predict_prob = predict(decision_tree_model, newdata = x_test, type = 'prob')
+y_mlp_predict_prob = predict(mlp_model, newdata = x_test, type = 'prob')
+y_knn_predict_prob = predict(knn_model, newdata = x_test, type = 'prob')
+y_nb_predict_prob = predict(nb_model, newdata = x_test, type = 'prob')
+
+y_svm_predict_prob$obs = y_test
+y_svm_predict_prob$Group = 'SVM'
+y_tree_predict_prob$obs = y_test
+y_tree_predict_prob$Group = 'Decision Tree'
+y_mlp_predict_prob$obs = y_test
+y_mlp_predict_prob$Group = 'Multilayer Perceptron'
+y_knn_predict_prob$obs = y_test
+y_knn_predict_prob$Group = 'KNN'
+y_nb_predict_prob$obs = y_test
+y_nb_predict_prob$Group = 'Naive Bayes'
+
+combo_df = rbind(y_svm_predict_prob, y_tree_predict_prob, y_mlp_predict_prob, y_knn_predict_prob, y_nb_predict_prob)
+
+test_roc = evalm(combo_df, plots = 'r', title = 'ROC-Curves', rlinethick = 0.8, cols = c('red','blue','green','darkgreen','purple'))
+test_pr = evalm(combo_df, plots = 'prg', title = 'Precision-Recall Curves', rlinethick = 0.8, cols = c('red','blue','green','darkgreen','purple'))
