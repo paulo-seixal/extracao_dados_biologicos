@@ -40,6 +40,17 @@ div.fontdoc {font-family: georgia;}
     body .main-container {
         max-width: 1750px;
     }
+    
+#TOC::before {
+  content: "";
+  display: block;
+  height: 150px;
+  margin: 2em 20px 20px 20px;
+  background-image: url('logo.png');
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
 </style>
 ```
 <div class = "fontdoc">
@@ -836,7 +847,7 @@ y_svm_predict = predict(svm_model, newdata = x_test)
 draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_svm_predict, mode = 'everything'), title = 'Confusion Matrix - SVM ' )
 ```
 
-Os resultados obtidos para este modelo apresentam-se bastante satisfatórios, conseguindo prever corretamente quase todas as amostras de teste, excetuando-se duas amostras tumoral que o modelo prevê erradamente como sendo tecido normal.
+Os resultados obtidos para este modelo apresentam-se bastante satisfatórios, conseguindo prever corretamente quase todas as amostras de teste, excetuando-se duas amostras de tecido tumoral que o modelo prevê erradamente como sendo tecido normal.
 
 As métricas apresentadas indicam um previsão bastante satisfatória do tipo de tecido, destacando-se uma *accuracy* de 0.986 e um f1-score de 0.992.
 
