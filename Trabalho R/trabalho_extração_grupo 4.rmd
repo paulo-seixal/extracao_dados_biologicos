@@ -15,11 +15,18 @@ output:
     code_folding: show
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_current$get(c(
+  "cache",
+  "cache.path",
+  "cache.rebuild",
+  "dependson",
+  "autodep"
+))
 ```
 
-```{css, echo=FALSE}
+```{css, echo=FALSE, cache=TRUE}
 .scroll {
   max-height: 300px;
   overflow-y: auto;
@@ -45,8 +52,7 @@ div.fontdoc {font-family: georgia;}
 
 Importação dos *packages*.
 
-```{r import1, message=FALSE, warning=FALSE, results='hide'}
-library(TCGAbiolinks)
+```{r import1, message=FALSE, warning=FALSE, results='hide', cache=TRUE}
 library(maftools)
 library(DESeq2)
 library(ggplot2)
@@ -65,18 +71,28 @@ library(ComplexHeatmap)
 library(RColorBrewer)
 library(circlize)
 library(genefilter)
+library(pheatmap)
+library(Glimma)
+library(caret)
+library(rpart)
+library(MLeval)
+library(doParallel)
+library(RColorBrewer)
+library(rattle)
+library(htmltools)
+
 
 ```
 
-# **Explicação dos dados, sua origem e relevância** 
+# **Explicação dos dados, sua origem e relevância**
 
 No âmbito da Unidade Curricular Extração de Conhecimento de Dados Biológicos, inserida no 1º ano de Mestrado de Bioionformática, foi proposta a realização de um trabalho que consta a análise de um conjunto de dados usando o programa R e os packages do Bioconductor.
 
 O objetivo deste trabalho é analisar as informações genéticas presentes no dataset e extrair conhecimentos relevantes, utilizando técnicas de visualização e análise estatística em R, onde se esperam encontrar padrões e correlações que possam ser explorados para um melhor entendimento da patologia em estudo.
 
-Neste caso, será utilizado o repositório TCGA-HNSC. Este repositório está incluido no projeto *The Cancer Genome Atlas (TCGA) Research Network*, uma iniciativa que visa recolher, partilhar e analisar dados de *Next Generation Sequencing (NGS),* com o principal foco um maior desenvolvimento da compreensão dos mecanismos do cancro a nível molecular.
+Neste caso, será utilizado o repositório TCGA-HNSC. Este repositório está incluido no projeto *The Cancer Genome Atlas (TCGA) Research Network*, uma iniciativa que visa recolher, partilhar e analisar dados de *Next Generation Sequencing (NGS),* com o principal foco um maior desenvolvimento da compreensão dos mecanismos do cancro a nível molecular [1].
 
-O repositório TCGA-HNSC contém informações sobre pacientes com cancro do tipo escamoso da cabeça e pescoço. Estas informações podem ser utilizadas para estudar a expressão de genes e correlacioná-la com informações clínicas relevantes. A inclusão de variáveis clínicas, como informações demográficas dos pacientes, histórico de tabagismo/alcoolismo e características relacionadas à progressão da doença, pode ajudar a identificar fatores de risco e prever resultados clínicos para pacientes com este tipo de cancro.
+O repositório TCGA-HNSC contém informações sobre pacientes com cancro do tipo escamoso da cabeça e pescoço. Estas informações podem ser utilizadas para estudar a expressão de genes e correlacioná-la com informações clínicas relevantes. A inclusão de variáveis clínicas, como informações demográficas dos pacientes, histórico de tabagismo/alcoolismo e características relacionadas à progressão da doença, pode ajudar a identificar fatores de risco e prever resultados clínicos para pacientes com este tipo de cancro [1].
 
 A importância deste conjunto de dados reside no facto de que a análise de expressão génica poder fornecer *insights* valiosos sobre os processos moleculares subjacentes ao desenvolvimento e progressão do cancro do tipo escamoso da cabeça e pescoço. Combinando essas informações com as características clínicas dos pacientes, é possível identificar fatores de risco, prever resultados clínicos, bem como identificar alvos de desenvolvimento para novas terapias.
 
@@ -87,7 +103,6 @@ Do repositório TCGA-HNSC foram retirados e analisados conjuntos de dados, espec
 -   **Mutações**
 
 -   **Metadados**
-
 
 # **Extração dos dados e preparação de ficheiros** {.tabset}
 
@@ -105,7 +120,7 @@ Estes dados foram posteriormente armazenados em ficheiros .csv
 
 ## Expressão génica {.unnumbered}
 
-```{r datasets, echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+```{r datasets, echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE, cache=TRUE}
 #project info
 project_summary = getProjectSummary('TCGA-HNSC')
 
@@ -148,7 +163,7 @@ Em ambos os casos, as colunas do dataset representam as amostras enquanto que as
 
 ## Mutações {.unnumbered}
 
-```{r mutações, eval=FALSE, message=FALSE, warning=FALSE}
+```{r mutações, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 #build query mutation data
 query_mutation = GDCquery(project = 'TCGA-HNSC',
                           data.category = 'Simple Nucleotide Variation',
@@ -176,7 +191,7 @@ O estudo de mutações acaba por enquadrar-se no objetivo do nosso trabalho pois
 
 ## Metadados {.unnumbered}
 
-```{r eval=FALSE}
+```{r eval=FALSE, cache=TRUE}
 
 #create metadata
 bio_data = colData(tcga_hnsc)
@@ -192,7 +207,7 @@ A informação deste dataset permite aos investigadores perceber melhor o relaci
 
 # **Importação dos dados**
 
-```{r import}
+```{r import, cache=TRUE}
 #dataset expressão genica
 gene_data = as.matrix(read.csv('data_unstranded.csv', row.names = 1))
 gene_data_fpkm = as.matrix(read.csv('data_fpkm_unstrand.csv', row.names = 1))
@@ -210,7 +225,7 @@ A importação dos ficheiro é demonstrada no segmento de código acima represen
 
 # **Pré-processamento**
 
-```{r preprocessing}
+```{r preprocessing, cache=TRUE}
 #tratamento valores omissos
 sum(is.na(gene_data))
 sum(is.na(gene_data_fpkm))
@@ -244,7 +259,7 @@ Devido à elevada quantidade de variáveis que compões os datasets, optou-se po
 
 Assim sendo, optamos por selecionar e análisar brevemente sete variáveis distintas: tipo de tecido, local do tumor, sexo do paciente, idade do paciente, tabaco, consumo de álcool e estadiamento do tumor.
 
-```{r summarytools}
+```{r summarytools, cache=TRUE}
 definition = bio_data$definition #tipo de tecido
 stage = bio_data$ajcc_clinical_stage #estadiamento
 tissue = bio_data$tissue_or_organ_of_origin #local do tumor
@@ -262,7 +277,7 @@ Nesta variável do dataset bio_data temos informação sobre a presença ou aus�
 
 A sua utilidade para o nosso objetivo reflete-se na possibilidade de comparar a expressão genética nos tecidos normais e tumorais e identificar genes diferencialmente expressos.
 
-```{r tecido, message=FALSE, warning=FALSE, headings = FALSE}
+```{r tecido, message=FALSE, warning=FALSE, cache=TRUE, headings=FALSE}
 #tipo de tecido
 ggplot(as.data.frame(definition), aes(x = definition, fill = stage)) + 
   geom_bar() + 
@@ -280,7 +295,7 @@ A presença de estadiamento na coluna dos tecidos normais poderá não fazer sen
 
 Esta variável armazena informação sobre o tecido ou orgão em que o tumor se desenvolveu. Ao considerar esta varíavel é possível obter um melhor contexto em relação às células e aos seus comportamentos característicos em cada orgão, bem como analisar como é afetada a progressão do tumor.
 
-```{r local, message=FALSE, warning=FALSE, headings = FALSE}
+```{r local, message=FALSE, warning=FALSE, headings = FALSE, cache=TRUE}
 #Local do tumor
 ggplot(as.data.frame(tissue), aes(x = tissue, fill = stage)) + 
   geom_bar() + 
@@ -298,7 +313,7 @@ Mais uma vez, regista-se uma maior prevalência de casos em estadiamento IV A, c
 
 Esta variável armazena informações sobre o sexo do paciente. A partir destes dados podemos inferir relativamente à prevalência de casos quanto ao sexo do paciente no presente estudo.
 
-```{r sexo, message=FALSE, warning=FALSE, headings = FALSE}
+```{r sexo, message=FALSE, warning=FALSE, headings = FALSE, cache=TRUE}
 #Sexo
 ggplot(as.data.frame(gender), aes(x = gender, fill = gender)) + 
   geom_bar() +
@@ -316,7 +331,7 @@ Segundo os dados obtidos, podemos concluir que há uma maior representação de 
 
 Esta varriável representa a idade com que os pacientes foram diagnosticados com cancro. Com estes dados podemos identificar padrões de como este tipo de cancro possa estar associado a grupos etários específicos.
 
-```{r idade, message=FALSE, warning=FALSE, headings = FALSE}
+```{r idade, message=FALSE, warning=FALSE, headings = FALSE, cache=TRUE}
 #idade
 ggplot(as.data.frame(age), aes(x = age)) + 
   geom_histogram(bins = 20, fill = 'lightblue', color = 'black') + 
@@ -333,7 +348,7 @@ Este facto é corroborado pelos resultados apresentados, onde se regista uma mé
 
 Esta variável representa os hábitos tabágicos dos pacientes. Com estes dados podemos tentar identificar padrões de associação de exposição ao tabaco com o desenvolvimento do cancro.
 
-```{r tabaco, message=FALSE, warning=FALSE}
+```{r tabaco, message=FALSE, warning=FALSE, cache=TRUE}
 #tabaco
 ggplot(as.data.frame(smoke_disc), aes(x = smoke_disc)) +
   geom_bar() +
@@ -353,7 +368,7 @@ No entanto, as amostras entre os fumadores e os não-fumadores apresentam-se bas
 
 Esta variável representa consumo de álcool dos pacientes. Com estes dados podemos tentar identificar padrões de associação de consumo de álcool com o desenvolvimento do cancro.
 
-```{r alcool, message=FALSE, warning=FALSE, headings = FALSE}
+```{r alcool, message=FALSE, warning=FALSE, headings = FALSE, cache=TRUE}
 #alcool
 ggplot(as.data.frame(alcohol), aes(x = alcohol, fill = alcohol)) + 
   geom_bar() +
@@ -375,7 +390,7 @@ Informações quanto à frequência do consumo, devem também ser registadas.
 
 A variável ajcc_clinical_stage representa a extensão da progressão do tumor na respetiva amostra com valores que são denominados de forma crescente como "Stage I", "Stage II", "Stage III", "Stage IVA", "Stage IVB". Com esta informação as amostras poderam ser agrupadas por grupos e analisadas no que toca aos padrões de expressão genética de cada grupo, comparando-os.
 
-```{r estadiamento, message=FALSE, warning=FALSE, headings = FALSE}
+```{r estadiamento, message=FALSE, warning=FALSE, headings = FALSE, cache=TRUE}
 s = as.data.frame(stage)
 stage_freq = table(s$stage)
 df = data.frame(stage = stage(stage_freq), freq = as.numeric(stage_freq))
@@ -399,7 +414,7 @@ O estadiamento IV A caracteriza-se clinicamente pela presença de metsastases em
 
 Através do package *maftools,* foi realizado um breve estudo de mutações. O seu estudo é importante porque fornece uma maneira eficaz de analisar e visualizar dados complexos de mutação, permitindo identificar padrões e relações importantes, bem como encontrar possíveis novos alvos terapêuticos.
 
-```{r mutacoes2, message=FALSE, warning=FALSE, out.width= '1750px'}
+```{r mutacoes2, message=FALSE, warning=FALSE, cache=TRUE, out.width= '1750px'}
 maftools_input = read.maf(mutation_data)
 
 plotmafSummary(maf = maftools_input,
@@ -412,7 +427,7 @@ Numa breve análise dos gráficos acima podemos concluir que a esmagadora maiori
 
 Ambos os genes TP53 e TTN são frequentemente associados a patologias tumorais. O TP53 codifica uma proteina responsável pela regulação da divisão celular, atuando como supressor tumoral. O TTN codifica uma proteina que pareticipa na contração muscular, também regularmente associada a tumores do tipo escamoso, como é o caso do HNSC.
 
-```{r mutacoes3, message=FALSE, warning=FALSE, out.width = '1750px'}
+```{r mutacoes3, message=FALSE, warning=FALSE, cache=TRUE, out.width = '1750px'}
 
 oncoplot(maf = maftools_input,
          top = 10,
@@ -423,7 +438,7 @@ No gráfico acima, é possível de se obvservar a existência de alguns picos on
 
 # **Filtragem do dataset através de análise univariada**
 
-```{r analise univariada, message=FALSE, warning=FALSE}
+```{r analise univariada, message=FALSE, warning=FALSE, cache=TRUE}
 
 #realizar t-test e verificar p-values e reirar os genes com maior evidência de expressão diferencial
 tt = rowttests(gene_data_fpkm, as.factor(bio_data$definition))
@@ -451,7 +466,7 @@ Na análise da expressão diferencial de genes o objetivo é observar se existe 
 
 Uma vez que o package **DEseq2** requer o uso de contagens não normalizadas do fragmentos, utilizou-se o ***gene_data*** construído no ponto anterior, e os metadados referentes em ***bio_data** (*neste caso a coluna *definition* para o *design*).
 
-```{r expressão diferencial, message=FALSE, warning=FALSE}
+```{r expressão diferencial, message=FALSE, warning=FALSE, cache=TRUE}
 dds = DESeqDataSetFromMatrix(countData = gene_data,
                              colData = bio_data,
                              design = ~ definition)
@@ -473,7 +488,7 @@ dds = DESeq(dds)
 
 Embora não seja necessário pré-filtrar genes de baixa contagem antes de executar as funções *DESeq2*, existem duas razões que tornam esta filtragem útil: ao remover linhas em que há muito poucas leituras, reduzimos o tamanho da memória do objeto de dados e aumentamos a velocidade das funções dentro do DESeq2. Esta filtragem pode também melhorar visualizações, já que recursos sem informações para expressão diferencial não serão incluidos nos gráficos.
 
-```{r expressao diferencial2, message=FALSE, warning=FALSE}
+```{r expressao diferencial2, message=FALSE, warning=FALSE, cache=TRUE}
 #Quality control - idealmente condições semelhantes no mesmo cluster
 vsdata = vst(dds, blind = FALSE)
 plotPCA(vsdata, intgroup = 'definition')
@@ -484,7 +499,7 @@ A partir do gráfico PCA conseguimos identificar similaridades e diferenças ent
 
 Embora este gráfico não nos permita tirar conclusões definitivas quanto aos genes diferencialemente expressos, pode funcionar como um controlo de qualidade. Uma dispersão de genes por todo o gráfico, sem grupos claramente deinidos, pode significar um erro no processo experimental.
 
-```{r expressão diferencial3, message=FALSE, warning=FALSE}
+```{r expressão diferencial3, message=FALSE, warning=FALSE, cache=TRUE}
 
 #dispersion plot
 plotDispEsts(dds)
@@ -494,7 +509,7 @@ No gráfico de dispersão acima, é esperado que os dados se disponham em torno 
 
 No entanto, e embora não seja um caso extremo, os dados observados não apresentam uma diminuição da dispersão desejável ao longo do gráfico, com a mesma a estagnar nos valores próximos de 1.
 
-```{r expressão diferencial4}
+```{r expressão diferencial4, cache=TRUE}
 #get results from DESeq 
 res = results(dds, alpha = 0.05)
 summary(res)
@@ -513,7 +528,7 @@ Neste caso, foi possível encontrar 3800 genes sobre-regulados (com log2 fold ch
 
 ## Volcano plot
 
-```{r volcano, message=FALSE, warning=FALSE, out.width= '1750px'}
+```{r volcano, message=FALSE, warning=FALSE, out.width= '1750px', cache=TRUE}
 #volcano plot
 sigs.df = as.data.frame(sigs)
 rownames(sigs.df) = gsub("\\..*","",rownames(sigs.df))
@@ -533,7 +548,7 @@ Os genes nos quadrantes inferiores não são diferencialmente expressos signific
 
 A partir da análise de enriquecimento podemos retirar informações sobre os processos biológicos subjacentes que são afetados pelas mudanças na expressão génica e ajudar a identificar possíveis alvos terapêuticos.
 
-```{r enriquecimento}
+```{r enriquecimento, cache=TRUE}
 
 #sobre-expressos
 genes_up = rownames(sigs)[sigs$log2FoldChange > 2]
@@ -556,7 +571,7 @@ A partir destes ids, com a função *enrichGO,* é possível pesquisar e associa
 
 ## Sobre-expressos {.unnumbered}
 
-```{r enriquecimento up}
+```{r enriquecimento up, cache=TRUE}
 barplot(GO_results, showCategory = 10, title = 'Upregulated')
 ```
 
@@ -564,29 +579,585 @@ Nos genes sobre-expressos notamos uma clara incidência sobre processos biológi
 
 ## Sub-expressos {.unnumbered}
 
-```{r enriquecimento down}
+```{r enriquecimento down, cache=TRUE}
 barplot(GO_results2, showCategory = 10, title = 'Downregulated')
 ```
 
 Nos genes sub-expressos, notamos uma incidência em genes que participam em funções de organização de estrutura celular e tecidular, bem como em mecanismos de diferenciação celular.
-                                                     
+
+# **Análise Multivariada** {.tabset}
+
+```{r, cache=TRUE}
+#Filtering dds - apresentar apenas genes significativos (p_adjusted < 0.05)------------------
+dds_filtered <- dds[rownames(dds) %in% rownames(sigs), ]
+all(rownames(dds_filtered) %in% rownames(sigs)) #True
+```
 
 ## Clustering {.unnumbered}
-```
-top_genes <- gene_data_fpkm[rank[1:50], ]
-gene_names <- rownames(top_genes)  # Extrair nomes dos genes
 
-# Calcular distância euclidiana
-eucD4 <- dist(top_genes)
+De forma a analisar as características dos dados e verificar se será possível construir *clusters* bem definidos, entre amostras de tecidos do mesmo tipo (normal e tumoral), optou-se por realizar duas técnicas de análise de *clustering* distintas: hierárquico e k-means.
+
+Começando pelo clustering hierárquico, tratando-se de um *dataset* com bastantes amostras, o uso de *clustering* hierárquico poderá não ser a melhor opção, uma vez que se torna demasiado pesado computacionalmente e será difícil conseguir fazer algum tipo de interpretação de resultados, dada a elevada dimensão do *dataset*. O dendograma apresentado tornar-se-ia, demasiado denso para retirar alguma conslusão.
+
+Assim sendo optou-se por fazer uma filtragem prévia do dataset, contando apenas com 20 amostras de tecido normal e 20 amostras de tecido tumoral. Todas estas amostras foram analisadas tendo em conta os 20 genes diferencialmente expressos, com menor *p-value.*
+
+```{r clustering, message=FALSE, warning=FALSE, cache=TRUE}
+rank = order(sigs$padj)
+top_genes <- dds_filtered[rank[1:20], ]
+gene_names <- rownames(dds_filtered)  # Extrair nomes dos genes
+
+
+normal_samples <- top_genes[, colData(top_genes)$definition == "Solid Tissue Normal"]
+set.seed(42)  # Set a seed for reproducibility
+normal_samples <- normal_samples[, sample(ncol(normal_samples), size = 20)]
+tumoral_samples <- top_genes[, colData(top_genes)$definition == "Primary solid Tumor"]
+set.seed(42)  # Set a seed for reproducibility
+tumoral_samples <- tumoral_samples[, sample(ncol(tumoral_samples), size = 20)]
+combined_samples <- cbind(normal_samples, tumoral_samples)
+```
+
+```{r clustering2, message=FALSE, warning=FALSE, cache=TRUE}
+eucD4 <- dist(t(assay(combined_samples)))
 cl.hier5 <- hclust(eucD4)
-plot(cl.hier5)
+plot(cl.hier5, labels=colData(combined_samples)$definition)
+```
 
+```{r clustering3, message=FALSE, warning=FALSE, cache=TRUE}
 cl.hier2 <- hclust(eucD4, method="single") 
-plot(cl.hier2)
+plot(cl.hier2,labels=colData(combined_samples)$definition)
+```
 
-cl.hier3 <- hclust(eucD4, method="average") #não está a funcionar
-plot(cl.hier3)
+```{r clustering4, message=FALSE, warning=FALSE, cache=TRUE}
+cl.hier3 <- hclust(eucD4, method="average")
+plot(cl.hier3,labels=colData(combined_samples)$definition)
+```
 
+Foi calculada a distância Euclidiana entre os *`top_genes`* e por fim são efetuados clusterings hierárquicos, representados através de dendogramas. Neste caso, foram implementadas três metodologias diferentes: *`complete`(default), `single` e `average`*.
+
+No método `complete` são considerados os pontos mais distantes, enquanto que no método `single` são considerados os dois pontos mais próximos entre dois clusters para calcular a diferença entre estes. Já no método `average` é realizada uma média de distância entre todos os pontos de 2 clusters resultando numa comparação mais balanceada.
+
+Numa análise global dos resultados obtidos, os dendogramas apresentam uma razoável divisão entre tecidos, no entanto existe ainda alguma sobreposição entre os grupos. Podemos ainda especular que, esta análise não será completamente fiável uma vez que poderia ser mais benéfico utilizar todas as amostras do dataset e não apenas 20 de cada tecido
+
+```{r clustering5, message=FALSE, warning=FALSE, cache=TRUE}
+assay_top_genes = t(assay(dds_filtered))
+
+wss = c()
+
+for (k in 2:10) {
+  kmeans = kmeans(assay_top_genes, centers = k)
+  wss = c(wss, kmeans$tot.withinss)
+}
+
+plot = data.frame(num_clusters = 2:10, wss = wss)
+
+ggplot(plot, aes(x = num_clusters, y = wss)) +
+  geom_line() + geom_point() +labs(x = "Clusters", y = "WSS") +
+  ggtitle('Elbow Method')
+```
+
+No caso do *clustering k-means*, optou-se for começar com o *elbow method*. Esta abordagem baseia-se na análise da variação da soma dos quadrados entre cada cluster (WSS) para cada número de clusters testado.
+
+No entanto, apesar de termos considerado o valor de k=5, este método torna-se algo subjetivo, uma vez que poderá nem sempre haver um local óbivo para o "ponto de cotovelo".
+
+É importante referir que no caso do *clustering k-means* passamos a usar o dataset com todas as amostras (ao contrário do *clustering* hierárquico), tendo em conta os 20 genes diferencialmente expressos de menor p-value
+
+```{r clustering6, message=FALSE, warning=FALSE, cache=TRUE}
+
+kmeans = kmeans(t(assay(dds_filtered)), centers = 5)   
+table(kmeans$cluster, colData(dds_filtered)$definition)
+```
+
+Ao analisar a tabela resultante é possível observar que, no geral, os clusters estão bem definidos quanto ao tipo de tecido. No entanto, existe ainda alguma sobreposição em alguns clusters. De certa forma, estes resultados são concordantes com o observado no clustering hierárquico, onde também se verifica uma definição razoável de clusters, no entanto, com alguma sobre posição.
+
+## MDS Plot {.unnumbered}
+
+```{r MDS, message=FALSE, warning=FALSE, out.width='1400px', cache=TRUE}
+tagList(glimmaMDS(dds_filtered))
+```
+
+Ao analisar as possiveis dimensões interpretáveis através do processo de MDS (*Multidimensional Scaling*), a comparação que pensamos ser a que possui mais espaço para especulação, será onde as amostras são divididas entre tecido normal e tecido tumoral (**na opção '*colour by*' deverá selecionar o item '*definition'*)**.
+
+Nesta situação podemos propor que estes dois tipos de tecidos possuem entre si, diferenças significativas em termos de expressão genética devido à evidente separação entre amostras dos dois tipos no gráfico. Podemos ver tamém que as duas primeiras dimensões explicam uma variância de dados na ordem dos 0.17 e 0.13, respetivamente.
+
+## PCA Plot {.unnumbered}
+
+```{r PCA, message=FALSE, warning=FALSE, cache=TRUE}
+vsdata = vst(dds_filtered, blind = FALSE)
+plotPCA(vsdata, intgroup = 'definition')
+```
+
+Aqui foi efetuado o método de PCA (Principal Component Analisys) para a coluna de '*definition*' que está dividida entre tecido normal e tecido tumoral. Mais uma vez foram utilizados os genes mais diferencialmente expressos com p-value \< 0.05. Podemos concluir que, à semelhança dos resultados anteriores, existe uma clara separação entre os dois tipos de amostras, com o PC1 a explicar 30% de variância dos dados e o PC2 18%.
+
+# **Análise preditiva** {.tabset}
+
+Um dos pontos chave para o desenvolvimento deste trabalho foi a implementação de métodos de análise preditiva com o objetivo principal de prever o tipo de tecido, seja tumoral ou normal, com base nos níveis de expressão genética de cada gene estudado.
+
+Tendo isso em consideração, optou-se por aplicar diversos modelos, todos eles sujeitos a uma *cross-validation* com 5 *folds* e 5 *repeats* em cada. Os modelos utilizados neste contexto são principalmente modelos tradicionais de *machine learning*, com a exceção do *Multilayer Perceptron*, que pertence à classe das redes neuronais.
+
+Assim sendo, os modelos são os seguintes:
+
+-   *Support Vector Machine*
+
+-   *Decision Tree*
+
+-   *Multilayer Perceptron*
+
+-   *K-nearest Neighbours*
+
+-   *Naive Bayes*
+
+Todos estes modelos foram aplicados através do package `caret` . É importante ainda referir que todos os modelos foram treinados com recurso ao método de ***parallel training***, de modo a diminuir o tempo de treino de cada um deles. Neste tipo de treino, os dados são divididos em partes menores e cada parte é atribuída a um recurso de processamento diferente, sem alterar a qualidade do treino.
+
+Todos os modelos foram treinados com este tipo de treino. No entanto, vale a pena realçar que, no caso do SVM, foram implementados os dois tipos de treino (convencional e *parallel training*), de forma a perceber o quão eficaz é o *parallel training* na redução do tempo de treino*.*
+
+Para treinar o modelo, foram utilizados apenas os genes com expressão diferencial, já calculados anteriormente, e que estão representados pela variável `dds_filtered`. Estes genes serão as *features* utilizadas nos modelos. Por outro lado, utilizou-se a variável `bio_data$definition` como as *labels* do modelo. Estas *labels* podem assumir dois valores distintos:
+
+-   **Solid.Tissue.Normal**: indicativo de tecidos saudáveis
+
+-   **Primary.solid.Tumor**: indicativo de tecidos tumorais
+
+O objetivo de cada modelo é prever corretamente cada uma dessas *labels* a partir de um conjunto de valores para cada gene (*features*).
+
+Para dividir o *dataset* em conjuntos de treino e teste, adotou-se uma estratégia de divisão de 75% das amostras para treino e os 25% restantes para testar o modelo. Uma vez que os dados de expressão genética e as *labels* com o tipo de tecido estão em *datasets* diferentes, foi necessário garantir que essa divisão fosse feita de forma coerente, para evitar trocas de posições entre os conjuntos de dados. Isto foi possível através da variável `train_indices`.
+
+```{r Preparar test e train dataset, message=FALSE, warning=FALSE, cache=TRUE}
+#test and training set
+count_data = t(assay(dds_filtered))
+labels = as.factor(bio_data$definition)
+
+# Split  data
+set.seed(123)  # For reproducibility
+train_indices = sample(1:nrow(count_data), nrow(count_data) * 0.75)  # 75% for training
+x_train = count_data[train_indices, ]
+y_train = labels[train_indices]
+x_test = count_data[-train_indices, ]
+y_test = labels[-train_indices]
+
+#transform labels into viable names
+y_train = make.names(c(y_train), unique = FALSE)
+y_test = make.names(c(y_test), unique = FALSE)
+
+#check sizes
+dim(x_train)
+length(y_train)
+dim(x_test)
+length(y_test)
+```
+
+De forma a garantir a correta divisão dos datasets, confirmou-se as dimensões de cada variável criada: `x_train, y_train, x_test, y_test` . Neste caso, observou-se que estarão disponíveis 423 amostras para treinar o modelo e 141 para testar.
+
+Ainda antes de passar para a aplicação dos modelos selecionados, decidiu-se ainda desenvolver uma função (`draw_confusion_matrix`) que permite apresentar os resultados de cada modelo de uma forma mais clara e organizada. Esta função apresenta os resultados da matriz de confusão do respetivo modelo, bem como as restantes métricas de avaliação.
+
+Esta função será aplicada em cada um dos modelos apresentados de seguida.
+
+```{r Função auxiliar matriz de confusão, message=FALSE, warning=FALSE, cache=TRUE}
+draw_confusion_matrix <- function(cm, title) {
+  
+  layout(matrix(c(1,1,2)))
+  par(mar=c(2,2,2,2))
+  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
+  title(title, cex.main=2)
+  
+  # create the matrix 
+  rect(150, 430, 240, 370, col='#3F97D0')
+  text(195, 435, 'Tumoral', cex=1.2)
+  rect(250, 430, 340, 370, col='#F7AD50')
+  text(295, 435, 'Normal', cex=1.2)
+  text(125, 370, 'Actual', cex=1.3, srt=90, font=2)
+  text(245, 450, 'Predicted', cex=1.3, font=2)
+  rect(150, 305, 240, 365, col='#F7AD50')
+  rect(250, 305, 340, 365, col='#3F97D0')
+  text(140, 400, 'Tumoral', cex=1.2, srt=90)
+  text(140, 335, 'Normal', cex=1.2, srt=90)
+  
+  # add in the cm results 
+  res <- as.numeric(cm$table)
+  text(195, 400, res[1], cex=1.6, font=2, col='white')
+  text(195, 335, res[2], cex=1.6, font=2, col='white')
+  text(295, 400, res[3], cex=1.6, font=2, col='white')
+  text(295, 335, res[4], cex=1.6, font=2, col='white')
+  
+  # add in the specifics 
+  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "DETAILS", xaxt='n', yaxt='n')
+  text(10, 85, names(cm$byClass[1]), cex=1.2, font=2)
+  text(10, 70, round(as.numeric(cm$byClass[1]), 3), cex=1.2)
+  text(30, 85, names(cm$byClass[2]), cex=1.2, font=2)
+  text(30, 70, round(as.numeric(cm$byClass[2]), 3), cex=1.2)
+  text(50, 85, names(cm$byClass[5]), cex=1.2, font=2)
+  text(50, 70, round(as.numeric(cm$byClass[5]), 3), cex=1.2)
+  text(70, 85, names(cm$byClass[6]), cex=1.2, font=2)
+  text(70, 70, round(as.numeric(cm$byClass[6]), 3), cex=1.2)
+  text(90, 85, names(cm$byClass[7]), cex=1.2, font=2)
+  text(90, 70, round(as.numeric(cm$byClass[7]), 3), cex=1.2)
+  
+  # add in the accuracy information 
+  text(30, 35, names(cm$overall[1]), cex=1.5, font=2)
+  text(30, 20, round(as.numeric(cm$overall[1]), 3), cex=1.4)
+  text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
+  text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
+  
+  text(50, -15, "Positive class: Primary.solid.Tumor", cex=1.2, font=2)
+} 
+```
+
+## SVM {.unnumbered}
+
+O Support Vector Machine (SVM) é um algoritmo de *machine learning* usado para classificação e regressão. Ele encontra um hiperplano de decisão ótimo que separa os dados de diferentes classes.
+
+O SVM é amplamente utilizado em diversas aplicações de *machine learning*.
+
+```{r svm, message=FALSE, warning=FALSE, cache=TRUE}
+###SVM sem Parallel training
+ctrl = trainControl(method = "repeatedcv", number = 5, repeats = 5, savePredictions = TRUE, classProbs = TRUE)
+start.time = proc.time()
+svm_model = train(x = x_train, y= y_train, method = 'svmLinear', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+print(run.time)
+```
+
+```{r svm com parallel, message=FALSE, warning=FALSE, cache=TRUE}
+###Svm com Parallel Training
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+svm_model = train(x = x_train, y= y_train, method = 'svmLinear', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
 
 ```
-Após uma redução dos 10 000 mais diferencialmente expressos para apenas 50, é calculada a distância Euclidiana entre os *top_genes* e por fim são efetuados clusterings hierárquicos, representados através de dendogramas. Um com o método "single" onde são considerados os dois pontos mais próximos entre dois clusters para calcular a diferença entre estes, e outro com o método "average" onde é feita uma média de distância entre todos os pontos de 2 clusters resultando numa comparação mais balanceada. #ainda me falta intrepertar
+
+Numa primeira fase, com os resultados acima apresentados, podemos perceber que o modelo com *parallel training* diminui consideravelmente o tempo de treino do modelo.
+
+```{r svm confusion matrix, message=FALSE, warning=FALSE, cache=TRUE}
+y_svm_predict = predict(svm_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_svm_predict, mode = 'everything'), title = 'Confusion Matrix - SVM ' )
+```
+
+Os resultados obtidos para este modelo apresentam-se bastante satisfatórios, conseguindo prever corretamente quase todas as amostras de teste, excetuando-se duas amostras tumoral que o modelo prevê erradamente como sendo tecido normal.
+
+As métricas apresentadas indicam um previsão bastante satisfatória do tipo de tecido, destacando-se uma *accuracy* de 0.986 e um f1-score de 0.992.
+
+## Decision Tree {.unnumbered}
+
+Os modelos de *Decision Tree* são compostos por nós internos que representam *features*, e nós folha que representam as classes ou resultados finais. Cada nó interno contém uma condição que divide o dataset com base numa *feature* específica. As ramificações subsequentes representam diferentes resultados possíveis com base nas condições dos nós internos anteriores, até chegarem a uma folha da árvore.
+
+```{r decision tree, message=FALSE, warning=FALSE, cache=TRUE}
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+decision_tree_model = train(x = x_train, y= y_train, method = 'rpart', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time )
+
+```
+
+```{r decision tree 2, message=FALSE, warning=FALSE, cache=TRUE}
+y_tree_predict = predict(decision_tree_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_tree_predict, mode = 'everything'), title= 'Confusion Matrix - Decision Tree ')
+```
+
+Os resultados obtidos para este modelo, embora razoáveis, são menos satisfatórios que no SVM. O modelo consegue prever corretamente 7 em 10 amostras de tecido normal, no entanto classifica erradamente 3 amostras de tecido normal como tecido tumoral e 2 amostras de tecido tumoral como tecido normal.
+
+As métricas apresentadas indicam também uma previsão razoável do tipo de tecido, destacando-se uma accuracy de 0.965 e um f1-score de 0.981. No entanto, estas métricas pode estar sujeitas a algum enviesamento devido ao desequilíbrio do dataset (apenas 10 amostras de tecido normal para teste).
+
+```{r decision tree 4, message=FALSE, warning=FALSE, cache=TRUE}
+fancyRpartPlot(decision_tree_model$finalModel )
+```
+
+Neste caso podemos também observar como seria a estrutura da árvore deste modelo. Deste modo, o modelo dá especial importância ao gene ENSG00000278966.2, em que valores acima ou iguais a 3.5 seriam já previstos como tecido tumoral.
+
+## Multilayer Perceptron {.unnumbered}
+
+O *Multilayer Perceptron* (MLP) é um modelo baseado em redes neuronais. É uma forma de rede neuronal feedforward, em que as informações fluem numa única direção, do nó de entrada para o nó de saída, sem qualquer ciclo.
+
+É composto por várias camadas de nodes interconectados. Cada camada contém um conjunto de nodes que realizam operações matemáticas, representadas por funções de ativação como a função sigmoide. A primeira camada é a camada de entrada, que recebe os dados de entrada. A última camada é a camada de saída, que produz as previsões.
+
+```{r mlp, message=FALSE, warning=FALSE, cache=TRUE}
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+mlp_model = train(x = x_train, y= y_train, method = 'mlp', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time )
+
+```
+
+```{r mlp 2, message=FALSE, warning=FALSE, cache=TRUE, cache=TRUE}
+y_mlp_predict = predict(mlp_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_mlp_predict, mode = 'everything'), title= 'Confusion Matrix - MLP ')
+```
+
+Os resultados obtidos para este modelo não foram satisfatórios, não conseguindo prever corretamente nenhuma das amostras de tecido normal. Esta situação poderá dever-se a várias situações, principalmente ao facto de o dataset ser bastante desequilibrado, pelo que o modelo poderá ter uma tendência a classificar todas as amostras como fazendo parte da classe maioritária, neste caso tecido tumoral.
+
+## KNN {.unnumbered}
+
+O *K-Nearest Neighbors* (KNN) é baseado no princípio de que as instâncias semelhantes estarão próximas umas das outras no espaço de features. O algoritmo faz as suas classificações/previsões ao atribuindo labels às instâncias de teste com base nas labels das instâncias vizinhas mais próximas. A instância mais próxima pode ser calculada através de distância Euclideana ou de Manhattan, por exemplo.
+
+```{r knn, message=FALSE, warning=FALSE, cache=TRUE}
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+knn_model = train(x = x_train, y= y_train, method = 'knn', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
+
+```
+
+```{r knn 2, message=FALSE, warning=FALSE, cache=TRUE}
+y_knn_predict = predict(knn_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_knn_predict, mode = 'everything'), title = 'Confusion Matrix - KNN ' )
+```
+
+Os resultados obtidos para este modelo apresentam-se bastante satisfatórios, conseguindo prever corretamente quase todas as amostras do teste, excetuando-se duas amostras de tecido normal que o modelo prevê como sendo tecido tumoral.
+
+As métricas apresentadas indicam também uma previsão bastante satisfatória do tipo de tecido, destacando-se uma accuracy de 0.986 e um f1-score de 0.992
+
+## Naive Bayes {.unnumbered}
+
+O Naive Bayes é um algoritmo de machine learning baseado no teorema de Bayes. Assume uma independência condicional entre as features, o que significa que cada feature é tratada como sendo independente das outras.
+
+```{r naive bayes, message=FALSE, warning=FALSE, cache=TRUE}
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+nb_model = train(x = x_train, y= y_train, method = 'naive_bayes', trControl = ctrl)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
+
+```
+
+```{r naive bayes 2, message=FALSE, warning=FALSE, cache=TRUE}
+y_nb_predict = predict(nb_model, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_nb_predict, mode = 'everything'), title='Confusion Matrix - Naive Bayes ' )
+```
+
+Os resultados obtidos para este modelo apresentam-se bastante satisfatórios, sendo o modelo com os melhores resultados. O modelo consegue prever corretamente todas as amostras de teste.
+
+As métricas apresentadas indicam também uma previsão bastante satisfatória do tipo de tecido, destacando-se que todas as métricas apresentam um valor de 1
+
+# **Otimização de hiperparâmetros** {.tabset}
+
+A otimização de hiperparâmetros é um processo de configuração de aprendizagem aplicado a modelos de análise preditiva, tendo como principal objetivo melhorar o desempenho do modelo. A técnica aplicada nos modelos é a *grid search*.
+
+A técnica de *grid search* testa todas as combinações possíveis de hiperparâmetros de um modelo, de forma exaustiva. Para isso, é criada uma matriz de valores de entrada, sendo de seguida calculadas todas as combinações possíveis entre os parâmetros a serem testados. Posteriormente, efetua uma avaliação do modelo para cada combinação de hiperparâmetros testada e seleciona os que obtiveram menor erro ou melhor métrica de avaliação. Importante mencionar que este processo requer um maior poder de processamento.
+
+O objetivo deste ponto do trabalho é comparar os resultados com e sem optimização de hiperparâmetros.
+
+Para este caso de estudo, observa-se que os valores resultantes após a otimização de hiperparâmetros são semelhantes aos obtidos anteriormente, sem a otimização, *com a* **exepção do modelo *Multilayer Perceptron***.
+
+No caso do modelo Naive Bayes, optou-se por não fazer otimização de hiperparâmetros, uma vez que já conseguia prever corretamente todas as amostras do teste.
+
+No entanto, para este caso estudo específico nos modelos SVM, Decision Tree e KNN, a aplicação da técnica de Grid Search para otimização de hiperparâmetros não parece ser útil, uma vez que, para o esforço computacional aplicado não foram observadas melhorias significativas nos resultados. Estes resultados eram esperados nos melhores modelos, uma vez que os resultados obtidos sem a otimização dos hiperparâmetros já eram muito positivos, o que sugere uma margem de melhoria bastante limitada.
+
+No caso do modelo *Multilayer perceptron*, foram observadas melhorias bastante razoáveis, uma vez que o modelo passa a conseguir prever corretamente todas as amostras em teste, com exceção de duas amostras de tecido normal, que o modelo prevê erradamente como sendo tecido tumoral.
+
+## SVM {.unnumbered}
+
+```{r SVM tuned, message=FALSE, warning=FALSE, cache=TRUE}
+svmGrid <- expand.grid(C=c(0.05, 0.5, 1, 5, 10))
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+svm_model_tuned = train(x = x_train, y= y_train, method = 'svmLinear', trControl = ctrl, tuneGrid = svmGrid)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
+```
+
+```{r SVM tuned2, message=FALSE, warning=FALSE, cache=TRUE}
+y_svm_tuned_predict = predict(svm_model_tuned, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_svm_tuned_predict, mode = 'everything'), title = 'Confusion Matrix - SVM Tuned ' )
+```
+
+## Decision Tree {.unnumbered}
+
+```{r tree tuned, message=FALSE, warning=FALSE, cache=TRUE}
+grid_tree = expand.grid(cp = c(0.1, 0.3, 0.5))
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+decision_tree_model_tuned = train(x = x_train, y= y_train, method = 'rpart', trControl = ctrl, tuneGrid = grid_tree)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
+```
+
+```{r tree tuned2, message=FALSE, warning=FALSE, cache=TRUE}
+y_tree_tuned_predict = predict(decision_tree_model_tuned, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_tree_tuned_predict, mode = 'everything'), title= 'Confusion Matrix - Decision Tree Tuned ' )
+```
+
+## Multilayer Perceptron {.unnumbered}
+
+```{r mlp tuned, message=FALSE, warning=FALSE, cache=TRUE}
+grid_mlp <- expand.grid(size = c(2, 5, 10))
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+mlp_model_tuned = train(x = x_train, y= y_train, method = 'mlp', trControl = ctrl, tuneGrid = grid_mlp)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
+```
+
+```{r mlp tuned2, message=FALSE, warning=FALSE, cache=TRUE}
+y_mlp_predict_tuned = predict(mlp_model_tuned, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_mlp_predict_tuned, mode = 'everything'), title= 'Confusion Matrix - MLP Tuned ')
+```
+
+## KNN {.unnumbered}
+
+```{r knn tuned, message=FALSE, warning=FALSE, cache=TRUE}
+knnGrid = expand.grid(k =c(1, 3, 5, 10))
+cl = makePSOCKcluster(5)
+registerDoParallel(cl)
+start.time = proc.time()
+knn_model_tuned = train(x = x_train, y= y_train, method = 'knn', trControl = ctrl, tuneGrid = knnGrid)
+stop.time = proc.time()
+run.time= stop.time - start.time
+stopCluster(cl)
+print(run.time)
+```
+
+```{r knn tuned2, message=FALSE, warning=FALSE, cache=TRUE}
+y_knn_tuned_predict = predict(knn_model_tuned, newdata = x_test)
+draw_confusion_matrix(confusionMatrix(as.factor(y_test), y_knn_tuned_predict, mode = 'everything'), title = 'Confusion Matrix - KNN ' )
+```
+
+# **Curvas ROC e Precision-Recall**
+
+De forma a conseguirmos comparar todos os modelos e os seus resultados, optamos por construir as respetivas curvas ROC *(Receiver Operating Characteristic)* e curvas *Precision-Recall*.
+
+Estas curvas permitem uma avaliação abrangente do desempenho dos modelos em relação a métricas como *sensivity*, *specificity*, *precision* e *recall*, fornecendo uma visão completa das características de classificação de cada modelo.
+
+```{r ROC Precision Recall, message=FALSE, warning=FALSE, cache=TRUE}
+y_svm_predict_prob = predict(svm_model, newdata = x_test, type = 'prob')
+y_tree_predict_prob = predict(decision_tree_model, newdata = x_test, type = 'prob')
+y_mlp_predict_prob = predict(mlp_model, newdata = x_test, type = 'prob')
+y_knn_predict_prob = predict(knn_model, newdata = x_test, type = 'prob')
+y_nb_predict_prob = predict(nb_model, newdata = x_test, type = 'prob')
+
+y_svm_predict_prob$obs = y_test
+y_svm_predict_prob$Group = 'SVM'
+y_tree_predict_prob$obs = y_test
+y_tree_predict_prob$Group = 'Decision Tree'
+y_mlp_predict_prob$obs = y_test
+y_mlp_predict_prob$Group = 'Multilayer Perceptron'
+y_knn_predict_prob$obs = y_test
+y_knn_predict_prob$Group = 'KNN'
+y_nb_predict_prob$obs = y_test
+y_nb_predict_prob$Group = 'Naive Bayes'
+
+combo_df = rbind(y_svm_predict_prob, y_tree_predict_prob, y_mlp_predict_prob, y_knn_predict_prob, y_nb_predict_prob)
+
+head(combo_df)
+```
+
+A construção das curvas foi realizada com recurso ao *package* `MLeval` . Como tal, as previsões de cada modelo foram concatenadas num único dataset, sendo o modelo identificado na coluna `Group` .
+
+É importante mencionar que, embora o modelo MLP tenha apresentado melhores resultados após a otimização dos hiperparâmetros, decidimos incluir nesta fase o modelo não otimizado. Esta opção foi tomada para fins de ilustração, permitindo-nos observar graficamente como seria a representação de um modelo com resultados inferiores. Esta inclusão proporciona uma comparação visual dos diferentes desempenhos e destaca a importância da otimização dos hiperparâmetros para melhorar os resultados do modelo.
+
+```{r ROC Precision Recall 2, message=FALSE, warning=FALSE, cache=TRUE}
+test_roc = evalm(combo_df,
+                 plots = 'r', 
+                 title = 'ROC-Curves', 
+                 rlinethick = 0.8, 
+                 cols = c('red','blue','green','darkgreen','purple'))
+```
+
+Relativamente às curvas ROC, observamos que na sua generalidade os modelos apresentam resultados bastantes razoáveis. Neste caso o Naive-Bayes e o SVM seriam aqueles com melhores avaliações (de notar que as suas linhas no gráfico estão sobrepostas).
+
+No entanto, alguns resultados estarão enviesados, princiaplmente no caso do MLP que sabemos que não obteve resultados razoáveis. Estes resultados poderão estar a ser influenciados pela alta precisão do modelo, influenciada pelo facto de o mesmo prever corretamente todas as amostras da classe maioritária.
+
+Assim sendo, optou-se por continuar a análise através das curvas *Precision-Recall*
+
+```{r ROC Precision Recall 3, message=FALSE, warning=FALSE, cache=TRUE}
+test_pr = evalm(combo_df, 
+                plots = 'prg', 
+                title = 'Precision-Recall Curves', 
+                rlinethick = 0.8, 
+                cols = c('red','blue','green','darkgreen','purple'))
+```
+
+Nas curvas *Precision-Recall* podemos ver que os resultados já se apresentam dentro do que seria de esperar, com o MLP a apresentar resultados nada razoáveis, tendo em conta que não conseguiu prever nenhuma das amostras da classe minoritária.
+
+# **Seleção/Importância de genes** {.tabset}
+
+Neste caso em estudo é calculada a importância das variáveis (genes) para cada modelo, através da função `varImp()`.
+
+Existe uma consensualidade nos resultados de todos os modelos, com a exceção do Decision Tree. Em todos os outros modelos o gene [ENSG00000237424.1 (FOXD2-AS1)](https://www.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g=ENSG00000237424;r=1:47432133-47434641;t=ENST00000445551) é o que apresenta maior importância, enquanto que, para a Decision Tree é o gene [ENSG00000278966.2](https://www.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g=ENSG00000278966;r=1:32973553-32974463).
+
+Uma vez que os resultados obtidos para a Decision Tree não foram de acordo com o esperado em comparação com os restantes modelos, decidiu-se que os resultados da seleção/importância de genes para o modelo Decision Tree não serão tão fiáveis como os restantes.
+
+Assim sendo, os restantes modelos corroboram a informação científica disponível sobre este tipo de cancro ( cancro do tipo escamoso da cabeça e pescoço - HNSC) e o gene FOXD2-AS1 [2, 3].
+
+Segundo a informação disponível o gene FOXD2-AS1 estará associado ao cancro HNSC ao atuar como uma proteína oncogénica, ao regular a proliferação e migração celular, além de suprimir a imunidade adaptativa ao modular o número e a função das células apresentadoras de antigénio (monócitos, linffócitos, mastócitos, células dendríticas, etc.) [2, 3].
+
+O gene FOXD2-AS1 é ainda um marcador tumoral em pacientes com este tipo de cancro, tendo vindo a ser desenvolvidas novas terapias que levem à inibição deste gene [4].
+
+## SVM {.unnumbered}
+
+```{r svm importance, message=FALSE, warning=FALSE, cache=TRUE}
+importance_svm = varImp(svm_model)
+plot(importance_svm, top=20, main='Features (genes) mais importantes - SVM')
+```
+
+## Decision Tree {.unnumbered}
+
+```{r tree importance, message=FALSE, warning=FALSE, cache=TRUE}
+importance_tree= varImp(decision_tree_model)
+plot(importance_tree, top=20, main='Features (genes) mais importantes - Decision Tree')
+```
+
+## Multilayer Perceptron {.unnumbered}
+
+```{r mlp importance, message=FALSE, warning=FALSE, cache=TRUE}
+importance_mlp = varImp(mlp_model_tuned)
+plot(importance_mlp, top=20, main='Features (genes) mais importantes - MultiLayer Perceptron')
+```
+
+## KNN {.unnumbered}
+
+```{r knn importance, message=FALSE, warning=FALSE, cache=TRUE}
+importance_knn = varImp(knn_model)
+plot(importance_knn, top=20, main='Features (genes) mais importantes - KNN')
+```
+
+## Naive Bayes {.unnumbered}
+
+```{r nb importance, message=FALSE, warning=FALSE, cache=TRUE}
+importance_nb = varImp(nb_model)
+plot(importance_nb, top=20, main='Features (genes) mais importantes - Naive Bayes')
+```
+
+# **Conclusão**
+
+Em suma, a partir do dataset inicialmente atribuido TCGA-HNSC foi possível analisar com sucesso quais são os genes diferencialmente expressos neste tipo de cancro, identificando também as suas principais funções através de uma análise de enriquecimento.
+
+Para além disto, conseguimos ainda realizar com sucesso uma análise preditiva do tipo de tecido (normal ou tumoral) a partir de um conjunto de genes diferencialmente expressos. Neste caso, o modelo com maior sucesso foi o modelo de *Naive Bayes,* tendo conseguido prever corretamente todas as amostras em teste.
+
+A partir da construção destes mesmos modelos, pudemos ainda destacar o gene FOXD2-AS1, como sendo um dos principais genes associados a este tipo de cancro.
+
+# **Referências**
+
+[1] Pérez Sayáns M, Chamorro Petronacci CM, Lorenzo Pouso AI, Padín Iruegas E, Blanco Carrión A, Suárez Peñaranda JM, García García A. Comprehensive Genomic Review of TCGA Head and Neck Squamous Cell Carcinomas (HNSCC). J Clin Med. 2019 Nov 7;8(11):1896. doi: 10.3390/jcm8111896. PMID: 31703248; PMCID: PMC6912350.
+
+[2] Zhang L, Bo H, Chen T, Li Q, Huan Y, Zhang S. *FOXD2-AS1* promotes migration and invasion of head and neck squamous cell carcinoma and predicts poor prognosis. Future Oncol. 2020 Oct;16(28):2209-2218. doi: 10.2217/fon-2020-0410. Epub 2020 Aug 7. PMID: 32762453.
+
+[3] Liu Z, Zhou W, Lin C, Wang X, Zhang X, Zhang Y, Yang R, Chen W, Cao W. Dysregulation of FOXD2-AS1 promotes cell proliferation and migration and predicts poor prognosis in oral squamous cell carcinoma: a study based on TCGA data. Aging (Albany NY). 2020 Dec 9;13(2):2379-2396. doi: 10.18632/aging.202268. Epub 2020 Dec 9. PMID: 33318296; PMCID: PMC7880351.
+
+[4] Zhou G, Huang Z, Meng Y, Jin T, Liang Y, Zhang B. Upregulation of long non-coding RNA FOXD2-AS1 promotes progression and predicts poor prognosis in tongue squamous cell carcinoma. J Oral Pathol Med. 2020 Nov;49(10):1011-1018. doi: 10.1111/jop.13074. Epub 2020 Jun 25. PMID: 32531865.
