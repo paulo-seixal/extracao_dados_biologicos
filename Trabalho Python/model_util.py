@@ -25,7 +25,7 @@ def fowlkes_mallows(confusion_matrix):
 
 def svm(fingerprints, Xs_train, Xs_test, y_train, test_set_final, train_set_descriptors, test_set_descriptors):
     '''
-    Função para aplicação do odelo Linear SVM com otimização de hiperparametros
+    Função para aplicação do modelo Linear SVM com otimização de hiperparametros
     '''
 
     for fp, X_train, X_test in zip(fingerprints,Xs_train, Xs_test):
@@ -163,7 +163,7 @@ def svm_curves(fingerprints, train_set_descriptors, test_set_descriptors, Xs_tra
 
 def knn(fingerprints, Xs_train, Xs_test, y_train, test_set_final, train_set_descriptors, test_set_descriptors):
     '''
-    Função para aplicação do odelo KNN com otimização de hiperparametros
+    Função para aplicação do modelo KNN com otimização de hiperparametros
     '''
     param_grid = {'n_neighbors':[2, 5, 10, 20, 30],
                     'weights':['uniform','distance']}
@@ -297,7 +297,7 @@ def knn_curves(fingerprints, train_set_descriptors, test_set_descriptors, Xs_tra
 
 def naive_bayes(fingerprints, Xs_train, Xs_test, y_train, test_set_final, train_set_descriptors, test_set_descriptors):
     '''
-    Função para aplicação do odelo Naive Bayes com otimização de hiperparametros
+    Função para aplicação do modelo Naive Bayes com otimização de hiperparametros
     '''
     param_grid = {'alpha': [0, 0.01, 0.5, 1.0, 5, 10],
               'force_alpha':[True, False],
